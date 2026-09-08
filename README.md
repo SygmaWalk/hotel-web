@@ -10,7 +10,7 @@ HTML, CSS, JavaScript, PHP y MySQL/MariaDB mediante PDO. XAMPP instalado en `C:\
 2. Abrir http://localhost/hotel-web/public/.
 3. Editar el proyecto en `C:\xampp\htdocs\hotel-web`.
 
-La página inicial solo verifica PHP. Todavía no existe conexión a la base ni funcionalidades del hotel.
+HOT-2: presentación del hotel, servicios, ubicación y contacto ficticios, navegación y estilos adaptables. PHP genera la página; CSS y JavaScript se sirven como archivos separados. Todavía no existe conexión a la base de datos ni formulario de reservas.
 
 ## Organización prevista
 
@@ -28,10 +28,14 @@ La página inicial solo verifica PHP. Todavía no existe conexión a la base ni 
 5. HOT-6 a HOT-10: acceso del personal y administración.
 6. HOT-11 a HOT-15: panel, calendario y otras mejoras futuras.
 
-[Jira HOTEL](https://sygmawalk.atlassian.net/jira/software/projects/HOT/boards)
+[Jira HOTEL](https://sygmawalk.atlassian.net/jira/software/projects/HOT/boards/35/backlog)
 
 Usar la clave de Jira en ramas y commits, por ejemplo `HOT-4-formulario-reserva`. La conexión GitHub/Jira debe verificarse en el panel de desarrollo.
 
 ## Acuerdo de trabajo
 
 Desarrollar una funcionalidad por vez, comprobarla y poder explicar petición, validación, procesamiento y respuesta. Los sprints son una ayuda personal de organización. No guardar credenciales, datos reales de huéspedes ni archivos de configuración privados en Git.
+
+## Foto ilustrativa
+
+[Bedroom hotel interior with open door window](https://commons.wikimedia.org/wiki/File:Bedroom_hotel_interior_with_open_door_window._(51536308276).jpg), de Nenad Stojkovic. Licencia [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). Se recorta visualmente para adaptarse al diseño; no representa un hotel real llamado Aurora.
