@@ -11,3 +11,5 @@
 Thumbs.db
 /.idea/
 /.vscode/
+/config/access.local.txt
+/tests/.runtime/

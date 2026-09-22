@@ -121,3 +121,56 @@ button, a { -webkit-tap-highlight-color: transparent; }
     .button { gap: 1rem; padding-inline: 1rem; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Formularios públicos y panel del personal */
+.app-header { display:flex; align-items:center; justify-content:space-between; gap:2rem; padding-block:1.5rem; }
+.app-nav { display:flex; align-items:center; flex-wrap:wrap; gap:1.2rem; }
+.app-nav a, .text-button { font-size:.9375rem; }
+.app-nav form { margin:0; }
+.text-button { border:0; background:transparent; color:var(--ink); text-decoration:underline; padding:.5rem 0; cursor:pointer; }
+.app-main { min-height:65vh; padding-block:3.5rem 5rem; }
+.app-main h1 { font-size:clamp(2.3rem,5vw,4rem); max-width:950px; margin-bottom:1.5rem; }
+.app-main h2 { font-size:1.8rem; }
+.intro { max-width:760px; color:var(--muted); margin-bottom:2rem; }
+.room-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.5rem; }
+.room-card { background:white; border:1px solid var(--line); padding:1.7rem; overflow-wrap:anywhere; }
+.room-card h2 { font-size:1.8rem; margin-bottom:1rem; }
+.room-card .eyebrow { font-size:.75rem; }
+.room-card .rate { margin-top:1.5rem; font-size:1.5rem; }
+.rate small { font-size:.9rem; color:var(--muted); }
+.form-panel { padding:2rem; background:white; border:1px solid var(--line); max-width:760px; margin-top:1.5rem; }
+.form-panel.narrow { max-width:500px; }
+label { display:block; margin:.9rem 0 .3rem; font-weight:bold; }
+input, select { display:block; width:100%; min-height:48px; border:1px solid #839494; background:white; color:var(--ink); border-radius:2px; padding:.65rem .8rem; font:inherit; }
+[aria-invalid="true"] { border:2px solid #a02d24; }
+.field-error { color:#99281f; font-size:.9rem; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+.button { cursor:pointer; border:0; font:inherit; }
+.button.secondary { background:#f2e9e2; color:#682d1b; border:1px solid #a68574; }
+.notice { background:#eaf0ed; border-left:4px solid #526e62; padding:1rem 1.2rem; margin-block:1.5rem; overflow-wrap:anywhere; }
+.notice.error { background:#fff0e9; border-color:#943e2b; color:#722b1c; }
+.notice.success { background:#eaf3e8; border-color:#34653b; }
+.notice ul { margin-bottom:0; }
+.filter-form { display:flex; align-items:end; gap:1rem; flex-wrap:wrap; margin-block:2rem; padding:1.5rem; background:#eaf0ed; }
+.filter-form .button { margin:0; }
+.filter-form a { padding-bottom:.8rem; }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; background:white; text-align:left; }
+caption { text-align:left; padding-bottom:.7rem; color:var(--muted); }
+th, td { padding:1rem; border-bottom:1px solid var(--line); }
+th { background:#eaf0ed; }
+.badge { display:inline-block; padding:.25rem .65rem; border-radius:20px; background:#f7edce; white-space:nowrap; font-size:.875rem; }
+.badge.confirmed { background:#e3efde; }
+.badge.rejected { background:#f3e2df; }
+.detail-panel { display:grid; grid-template-columns:180px 1fr; gap:.8rem 2rem; border:1px solid var(--line); background:white; padding:2rem; }
+.detail-panel dt { font-weight:bold; }
+.detail-panel dd { margin:0; overflow-wrap:anywhere; }
+.actions { display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
+.actions .button { margin-top:.5rem; }
+.admin-grid { display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
+.inventory { display:grid; gap:1rem; margin-top:1.5rem; }
+.inventory a { display:inline-block; margin-top:.7rem; }
+.check-label { display:flex; align-items:start; gap:.8rem; font-weight:normal; }
+.check-label input { width:22px; min-height:22px; flex-shrink:0; margin-top:.3rem; }
+@media(max-width:1000px) { .app-header { align-items:start; flex-direction:column; } .room-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:700px) { .room-grid, .admin-grid, .form-grid { grid-template-columns:1fr; } .app-main { padding-block:2rem 3rem; } .form-panel { padding:1.2rem; } .detail-panel { grid-template-columns:1fr; gap:.3rem; padding:1.2rem; } .detail-panel dd { margin-bottom:.8rem; } .app-nav { gap:.8rem 1.2rem; } .filter-form { align-items:stretch; flex-direction:column; } }

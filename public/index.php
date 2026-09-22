@@ -36,7 +36,7 @@ $servicios = [
             <nav id="navegacion" class="navigation" aria-label="Navegación principal">
                 <a href="#inicio">Inicio</a>
                 <a href="#servicios">Servicios</a>
-                <a href="#ubicacion">Ubicación</a>
+                <a href="habitaciones.php">Habitaciones</a>
                 <a class="nav-contact" href="#contacto">Contacto <span aria-hidden="true">↗</span></a>
             </nav>
         </div>
@@ -49,7 +49,7 @@ $servicios = [
                 <h1 id="titulo-hotel"><?= htmlspecialchars($nombreHotel, ENT_QUOTES, 'UTF-8') ?></h1>
                 <p class="hero-tagline"><?= htmlspecialchars($descripcion, ENT_QUOTES, 'UTF-8') ?></p>
                 <p class="hero-description">Bajá el ritmo. Disfrutá de espacios tranquilos, una atención cercana y los pequeños detalles que hacen una buena estadía.</p>
-                <a class="button" href="#servicios">Conocé nuestros servicios <span aria-hidden="true">↓</span></a>
+                <a class="button" href="habitaciones.php">Conocé nuestras habitaciones <span aria-hidden="true">↓</span></a>
                 <p class="hero-location"><span aria-hidden="true">◎</span> Bariloche, Patagonia argentina <span class="example-label">Ubicación de ejemplo</span></p>
             </div>
             <figure class="hero-figure">
@@ -90,7 +90,7 @@ $servicios = [
                 <p>Consultas sobre servicios y detalles de la estadía.</p>
                 <div class="contact-detail"><span>CORREO DE EJEMPLO</span><p>consultas@hotelaurora.example</p></div>
                 <div class="contact-detail"><span>ATENCIÓN PROPUESTA</span><p>Recepción las 24 horas</p></div>
-                <p class="contact-note">Canal ficticio, sin recepción de mensajes ni reservas.</p>
+                <p class="contact-note">Correo ficticio. Podés probar el formulario de solicitud con datos de ejemplo. <a href="reservar.php">Solicitar estadía →</a></p>
             </div>
         </section>
     </main>
@@ -99,7 +99,7 @@ $servicios = [
         <div class="container footer-inner">
             <p class="footer-brand"><?= htmlspecialchars($nombreHotel, ENT_QUOTES, 'UTF-8') ?></p>
             <p>Proyecto académico · Todos los datos del hotel son de ejemplo.</p>
-            <a href="#inicio">Volver al inicio ↑</a>
+            <a href="login.php">Acceso del personal</a>
         </div>
         <div class="container photo-credit">Foto ilustrativa: <a href="https://commons.wikimedia.org/wiki/File:Bedroom_hotel_interior_with_open_door_window._(51536308276).jpg">Nenad Stojkovic</a>, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>, vía Wikimedia Commons. Imagen recortada en pantalla.</div>
     </footer>

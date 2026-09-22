@@ -1,3 +1,5 @@
 Options -Indexes
 RewriteEngine On
-RewriteRule ^(?!public(?:/|$)).*$ public/ [R=302,L]
+# Solo public/ se sirve por HTTP. Configuración, SQL, pruebas y Git quedan privados.
+RewriteRule ^$ public/ [R=302,L]
+RewriteRule ^(?!public(?:/|$)).+ - [F,L]
