@@ -3,11 +3,16 @@ $summary = $dashboard['summary'];
 $displayDate = (new DateTimeImmutable($date))->format('d/m/Y');
 ?>
 <div class="dashboard-date"><span class="eyebrow">RESUMEN DE OPERACIONES</span><time datetime="<?= e($date) ?>"><?= e($displayDate) ?></time></div>
+<section class="dashboard-panel"><h2>Huéspedes alojados ahora</h2>
+<p class="panel-description">Registro actual de llegadas sin salida, independiente de la fecha consultada. Las reservas previstas se mantienen hasta su fecha de salida; una salida anticipada no las cancela.</p>
+<?php $occupants = hotel()->occupants(); ?>
+<?php if (!$occupants): ?><p>No hay huéspedes con llegada registrada y salida pendiente.</p><?php else: ?><ul class="request-list"><?php foreach ($occupants as $occupant): ?><li><a href="<?= e(url('solicitud.php?id=' . $occupant['id'])) ?>"><?= e($occupant['guest_name']) ?> · Habitación <?= e($occupant['code']) ?></a><span><?= $occupant['check_out'] <= date('Y-m-d') ? 'Salida prevista alcanzada: revisar' : 'Alojado' ?></span></li><?php endforeach ?></ul><?php endif ?>
+</section>
 <section class="metrics-grid" aria-label="Indicadores del día">
     <a class="metric-card" href="#arrivals"><span class="metric-label">Llegadas previstas</span><strong><?= e($summary['arrivals']) ?></strong><span>Reservas que comienzan este día <span aria-hidden="true">↗</span></span></a>
     <a class="metric-card" href="#departures"><span class="metric-label">Salidas previstas</span><strong><?= e($summary['departures']) ?></strong><span>Reservas que finalizan este día <span aria-hidden="true">↗</span></span></a>
     <a class="metric-card metric-pending" href="#pending"><span class="metric-label">Por responder</span><strong><?= e($summary['pending']) ?></strong><span>Solicitudes pendientes · todas las fechas <span aria-hidden="true">↗</span></span></a>
-    <a class="metric-card metric-availability" href="#availability"><span class="metric-label">Habitaciones libres</span><strong><?= e($summary['available']) ?><small> / <?= e($summary['active']) ?></small></strong><span>Activas y sin reserva para esa noche <span aria-hidden="true">↗</span></span></a>
+    <a class="metric-card metric-availability" href="#availability"><span class="metric-label">Libres según reservas</span><strong><?= e($summary['available']) ?><small> / <?= e($summary['active']) ?></small></strong><span>Activas y sin reserva para esa noche <span aria-hidden="true">↗</span></span></a>
 </section>
 <div class="dashboard-grid">
 <section class="dashboard-panel" id="pending" aria-labelledby="pending-title">
@@ -45,7 +50,7 @@ $displayDate = (new DateTimeImmutable($date))->format('d/m/Y');
 <?php endforeach ?>
 </div>
 <section class="dashboard-panel" id="availability" aria-labelledby="availability-title">
-    <div class="panel-heading"><div><p class="eyebrow">NOCHE DEL <?= e($displayDate) ?></p><h2 id="availability-title">Disponibilidad por habitación</h2></div><span class="occupancy-number"><?= e($summary['percentage']) ?>% <small>reservado</small></span></div>
+    <div class="panel-heading"><div><p class="eyebrow">NOCHE DEL <?= e($displayDate) ?></p><h2 id="availability-title">Disponibilidad prevista por habitación</h2></div><span class="occupancy-number"><?= e($summary['percentage']) ?>% <small>reservado</small></span></div>
     <p class="panel-description">La fecha de salida libera la noche. Las solicitudes pendientes no bloquean disponibilidad.</p>
     <?php if (!$dashboard['rooms']): ?><p class="empty-inline">Todavía no hay habitaciones cargadas. Un administrador puede agregarlas al inventario.</p><?php else: ?>
     <ul class="room-status-grid">

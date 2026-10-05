@@ -2,8 +2,8 @@
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 $user = requireUser();
 $from = array_key_exists('from', $_GET) ? field($_GET, 'from') : date('Y-m-d');
-$defaultTo = validDate($from) && $from >= '2000-01-01' && $from <= '2099-12-31'
-    ? min('2099-12-31', (new DateTimeImmutable($from))->modify('+6 days')->format('Y-m-d')) : '';
+$defaultTo = validDate($from) && $from >= '2000-01-01' && $from <= bookingLimit()
+    ? min(bookingLimit(), (new DateTimeImmutable($from))->modify('+6 days')->format('Y-m-d')) : '';
 $to = array_key_exists('to', $_GET) ? field($_GET, 'to') : $defaultTo;
 $roomValue = field($_GET, 'room_id');
 $errors = []; $calendar = null; $allRooms = [];
@@ -19,13 +19,13 @@ try {
 if ($errors) { http_response_code(422); $allRooms = hotel()->rooms(true); }
 $formatDate = fn(string $date): string => (new DateTimeImmutable($date))->format('d/m/Y');
 $calendarUrl = fn(string $start, string $end): string => url('calendario.php?' . http_build_query(['from'=>$start, 'to'=>$end, 'room_id'=>$roomValue]));
-$labels = ['free'=>'Libre', 'reserved'=>'Reservada', 'expected'=>'Ocupada prevista', 'inactive'=>'Inactiva'];
+$labels = ['free'=>'Libre', 'reserved'=>'Reservada', 'expected'=>'Ocupada prevista', 'inactive'=>'Inactiva', 'occupied'=>'Estadía registrada'];
 pageStart('Calendario de disponibilidad', $user);
 ?>
-<p class="intro">Consultá las noches de cada habitación y abrí una reserva para ver sus detalles.</p>
+<p class="intro">Consultá las noches de cada habitación hasta el <?= e(bookingLimit()) ?>, un año desde hoy. Podés consultar fechas pasadas.</p>
 <form method="get" class="filter-form calendar-filter">
-    <div><label for="from">Primera noche</label><input id="from" name="from" type="date" required min="2000-01-01" max="2099-12-31" value="<?= e($from) ?>" <?= isset($errors['from']) ? 'aria-invalid="true"' : '' ?>></div>
-    <div><label for="to">Última noche</label><input id="to" name="to" type="date" required min="2000-01-01" max="2099-12-31" value="<?= e($to) ?>"></div>
+    <div><label for="from">Primera noche</label><input id="from" name="from" type="date" required min="2000-01-01" max="<?= e(bookingLimit()) ?>" value="<?= e($from) ?>" <?= isset($errors['from']) ? 'aria-invalid="true"' : '' ?>></div>
+    <div><label for="to">Última noche</label><input id="to" name="to" type="date" required min="2000-01-01" max="<?= e(bookingLimit()) ?>" value="<?= e($to) ?>"></div>
     <div><label for="room_id">Habitación</label><select id="room_id" name="room_id" <?= isset($errors['room_id']) ? 'aria-invalid="true"' : '' ?>><option value="">Todas las habitaciones</option>
         <?php foreach ($allRooms as $room): ?><option value="<?= (int) $room['id'] ?>" <?= $roomValue === (string) $room['id'] ? 'selected' : '' ?>><?= e($room['code'] . ' · ' . $room['name'] . ($room['active'] ? '' : ' · Inactiva')) ?></option><?php endforeach ?>
     </select></div>
@@ -44,13 +44,13 @@ pageStart('Calendario de disponibilidad', $user);
         $nextStart = (new DateTimeImmutable($to))->modify('+1 day')->format('Y-m-d');
         $nextEnd = (new DateTimeImmutable($to))->modify('+' . $length . ' days')->format('Y-m-d'); ?>
         <?php if ($previousStart >= '2000-01-01'): ?><a href="<?= e($calendarUrl($previousStart, $previousEnd)) ?>">← Anteriores</a><?php endif ?>
-        <?php if ($nextEnd <= '2099-12-31'): ?><a href="<?= e($calendarUrl($nextStart, $nextEnd)) ?>">Siguientes →</a><?php endif ?>
+        <?php if ($nextStart <= bookingLimit()): ?><a href="<?= e($calendarUrl($nextStart, min($nextEnd, bookingLimit()))) ?>">Siguientes →</a><?php endif ?>
         </nav>
     </div>
     <ul class="calendar-legend" aria-label="Estados del calendario">
         <?php foreach ($labels as $state => $label): ?><li class="calendar-state <?= e($state) ?>"><?= e($label) ?></li><?php endforeach ?>
     </ul>
-    <p class="panel-description" id="calendar-help">Las reservas confirmadas bloquean desde la entrada hasta la noche anterior a la salida. Pendientes y rechazadas no bloquean. «Ocupada prevista» identifica noches confirmadas de hoy o anteriores; no acredita un check-in real. Las noches futuras figuran como reservadas.</p>
+    <p class="panel-description" id="calendar-help">Las reservas confirmadas bloquean desde la entrada hasta la noche anterior a la salida. Pendientes y rechazadas no bloquean. «Ocupada prevista» identifica noches confirmadas de hoy o anteriores; no acredita un check-in real. Las noches futuras figuran como reservadas. «Estadía registrada» corresponde a movimientos reales. Una salida anticipada no cancela las noches previstas de la reserva.</p>
     <?php if (!$calendar['rooms']): ?>
         <p class="notice">Todavía no hay habitaciones para mostrar.</p>
     <?php else: ?>
@@ -64,6 +64,7 @@ pageStart('Calendario de disponibilidad', $user);
                     <?php foreach ($calendar['days'] as $day): $cell = $calendar['cells'][$room['id']][$day]; ?>
                     <td class="calendar-cell <?= e($cell['state']) ?>">
                         <span class="calendar-state <?= e($cell['state']) ?>"><?= e($labels[$cell['state']]) ?></span>
+                        <?php foreach ($cell['actuals'] as $actual): ?><a class="calendar-movement" href="<?= e(url('solicitud.php?id=' . $actual['id'])) ?>">Registro real #<?= (int) $actual['id'] ?> · Entrada <?= e($actual['checked_in_at']) ?><?= $actual['checked_out_at'] ? ' · Salida ' . e($actual['checked_out_at']) : ' · Sin salida registrada' ?></a><?php endforeach ?>
                         <?php foreach ($cell['stays'] as $stay): ?><a class="calendar-stay" href="<?= e(url('solicitud.php?id=' . $stay['id'])) ?>"><strong>#<?= (int) $stay['id'] ?></strong> <?= e($stay['guest_name']) ?></a><?php endforeach ?>
                         <?php foreach (['departures'=>'Salida', 'arrivals'=>'Entrada'] as $movement => $label): foreach ($cell[$movement] as $reservation): ?><a class="calendar-movement" href="<?= e(url('solicitud.php?id=' . $reservation['id'])) ?>"><?= e($label) ?> #<?= (int) $reservation['id'] ?></a><?php endforeach; endforeach ?>
                     </td><?php endforeach ?>

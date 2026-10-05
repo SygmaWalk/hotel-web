@@ -21,12 +21,12 @@ function token(string $html, string $name = 'csrf'): string {
     if (!preg_match('/name="' . preg_quote($name, '/') . '" value="([^"]+)"/', $html, $match)) throw new RuntimeException('Falta token ' . $name);
     return html_entity_decode($match[1], ENT_QUOTES, 'UTF-8');
 }
-function request(string $page, array $post = [], string $client = 'guest', string $method = 'GET'): array {
+function request(string $page, array $post = [], string $client = 'guest', string $method = 'GET', bool $multipart = false): array {
     global $base, $runtime;
     $curl = curl_init($base . '/' . $page);
     curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_HEADER=>true, CURLOPT_FOLLOWLOCATION=>false,
         CURLOPT_COOKIEFILE=>$runtime . '/' . $client . '.cookies', CURLOPT_COOKIEJAR=>$runtime . '/' . $client . '.cookies', CURLOPT_TIMEOUT=>10]);
-    if ($method === 'POST') { curl_setopt($curl, CURLOPT_POST, true); curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post)); }
+    if ($method === 'POST') { curl_setopt($curl, CURLOPT_POST, true); curl_setopt($curl, CURLOPT_POSTFIELDS, $multipart ? $post : http_build_query($post)); }
     elseif ($method !== 'GET') curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
     $response = curl_exec($curl);
     if ($response === false) throw new RuntimeException('HTTP: ' . curl_error($curl));
@@ -64,8 +64,8 @@ try {
     foreach ([['2027-02-30','2027-03-01'], ['','2026-10-05'], ['1999-12-31','2000-01-01'], ['2099-12-31','2100-01-01'], ['2026-10-06','2026-10-05'], ['2026-10-01','2026-11-01']] as [$badFrom, $badTo]) {
         rejected(fn() => $hotel->calendar($badFrom, $badTo), 'calendario rechaza fecha o rango inválido');
     }
-    check(count($hotel->calendar('2028-02-28', '2028-03-01')['days']) === 3, 'calendario incluye día bisiesto y cambio de mes');
-    check(count($hotel->calendar('2099-12-01', '2099-12-31')['days']) === 31, 'calendario admite 31 noches y límite superior');
+    check(count($hotel->calendar('2024-02-28', '2024-03-01')['days']) === 3, 'calendario incluye día bisiesto y cambio de mes');
+    check(count($hotel->calendar((new DateTimeImmutable(bookingLimit()))->modify('-30 days')->format('Y-m-d'), bookingLimit())['days']) === 31, 'calendario admite 31 noches y límite superior');
     foreach (['2027-02-30', '', '1999-12-31', '2100-01-01', "2026-10-05' OR 1=1"] as $badDate) {
         rejected(fn() => $hotel->dashboard($badDate), 'fecha inválida del panel');
     }
@@ -168,7 +168,7 @@ try {
     $address = stream_socket_get_name($socket, false); fclose($socket);
     $base = 'http://' . $address;
     foreach (glob($runtime . '/*.cookies') as $cookie) unlink($cookie);
-    $env = getenv(); $env['HOTEL_CONFIG_PATH'] = $configPath;
+    $env = getenv(); $env['HOTEL_CONFIG_PATH'] = $configPath; $env['HOTEL_UPLOAD_DIR'] = $runtime . '/uploads-' . $schema;
     $server = proc_open([PHP_BINARY, '-d', 'session.save_path=' . $runtime, '-S', $address, '-t', $root . '/public'],
         [0=>['pipe','r'],1=>['file',$runtime.'/server.log','a'],2=>['file',$runtime.'/server.log','a']], $pipes, $root, $env);
     fclose($pipes[0]);
@@ -219,7 +219,7 @@ try {
     }
     $calendarBody = request('calendario.php?from='.$day(0).'&to='.$day(0), [], 'admin')[1];
     check(str_contains($calendarBody, '&lt;script&gt;calendarTest()&lt;/script&gt;') && !str_contains($calendarBody, '<script>calendarTest()'), 'calendario escapa nombres de reservas');
-    $calendarBody = request('calendario.php?from=2099-12-31', [], 'admin')[1];
+    $calendarBody = request('calendario.php?from='.bookingLimit(), [], 'admin')[1];
     check(str_contains($calendarBody, '1 noche') && !str_contains($calendarBody, 'Siguientes →'), 'calendario no navega fuera del límite superior');
     check(!str_contains(request('calendario.php?from=2000-01-01', [], 'admin')[1], '← Anteriores'), 'calendario no navega fuera del límite inferior');
     check(!str_contains($body,$sameToken) && !str_contains($body,$valid['email']), 'panel no expone tokens de envío ni correo del huésped');
@@ -251,6 +251,7 @@ try {
     check(request('habitaciones-admin.php?id='.$httpRoom,['csrf'=>$adminCsrf,'action'=>'save',...$room,'code'=>'T-HTTP','nightly_rate'=>'0'],'admin','POST')[0] === 303, 'edición tarifa cero');
     check(request('habitaciones-admin.php?id='.$raceRoom,['csrf'=>$adminCsrf,'action'=>'deactivate'],'admin','POST')[0] === 422, 'advertencia HTTP reservas futuras');
     check(request('habitaciones-admin.php?id='.$raceRoom,['csrf'=>$adminCsrf,'action'=>'deactivate','acknowledged'=>'1'],'admin','POST')[0] === 303, 'baja aceptada HTTP');
+    require __DIR__ . '/operations-cases.php';
     check(request('logout.php',['csrf'=>$adminCsrf],'admin','POST')[0] === 303 && request('solicitudes.php',[],'admin')[0] === 303, 'logout invalida acceso');
     $lockForm=request('login.php',[],'locked')[1]; $lockCsrf=token($lockForm);
     for($i=0;$i<5;$i++) request('login.php',['csrf'=>$lockCsrf,'email'=>'locked@example.test','password'=>'wrong'],'locked','POST');
@@ -267,6 +268,8 @@ try {
     foreach ($workers as $worker) if (is_resource($worker)) { proc_terminate($worker); proc_close($worker); }
     if (is_resource($server)) { proc_terminate($server); proc_close($server); }
     $hotel = null; $pdo = null;
+    foreach (glob($runtime . '/uploads-' . $schema . '/*') ?: [] as $upload) unlink($upload);
+    if (is_dir($runtime . '/uploads-' . $schema)) rmdir($runtime . '/uploads-' . $schema);
     // Solo la base efímera creada por ESTA ejecución. Nunca hotel_aurora.
     if ($created && preg_match('/^hotel_test_[a-f0-9]{10}$/D', $schema)) $control->exec('DROP DATABASE ' . $schema);
     if (is_file($runtime . '/config.php')) unlink($runtime . '/config.php');

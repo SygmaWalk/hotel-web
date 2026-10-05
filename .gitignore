@@ -13,3 +13,4 @@ Thumbs.db
 /.vscode/
 /config/access.local.txt
 /tests/.runtime/
+/storage/

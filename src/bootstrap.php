@@ -46,6 +46,9 @@ function requireUser(bool $admin = false): array {
     return $user;
 }
 require_once dirname(__DIR__) . '/views/layout.php';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    fail(413, 'El envío supera el tamaño permitido. Adjuntá hasta cinco imágenes de 1 MB como máximo.');
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals($_SESSION['csrf'], field($_POST, 'csrf'))) {
     fail(403, 'El formulario venció o no es válido. Volvé a abrir la página.');
 }

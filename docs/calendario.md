@@ -4,7 +4,7 @@ Disponible para recepción y administración desde **Calendario** en el menú de
 
 ## Consulta
 
-- Seleccionar primera y última noche, ambas incluidas: entre 1 y 31 noches, en los años 2000–2099.
+- Seleccionar primera y última noche, ambas incluidas: entre 1 y 31 noches, desde el año 2000 hasta un año desde hoy.
 - Consultar todas las habitaciones o una en particular. Se incluyen las inactivas con una advertencia junto al nombre.
 - Anteriores y Siguientes desplazan el rango completo y conservan la habitación seleccionada. Hoy y próximas noches restablece siete noches y todas las habitaciones.
 - Abrir el nombre de una reserva, su entrada o su salida para consultar el detalle. El calendario no modifica reservas.
@@ -19,9 +19,9 @@ La disponibilidad se calcula con reservas confirmadas y con la regla **entrada i
 - **Ocupada prevista:** noche de hoy o anterior cubierta por una reserva confirmada. Es una estimación según las fechas, no prueba de presencia ni de check-in.
 - **Inactiva:** habitación desactivada y sin reserva confirmada en esa noche. Si conserva reservas, se muestran junto a la advertencia de habitación inactiva; nunca se interpreta como disponible para nuevas solicitudes.
 
-Los estados temporales se calculan respecto de la fecha del servidor en Argentina, no respecto de la primera noche del filtro. Las solicitudes pendientes y rechazadas no bloquean disponibilidad. La distinción con check-in real queda pendiente en HOT-26; los bloqueos de limpieza y mantenimiento, en HOT-13. Este alcance utiliza ocupación prevista como criterio inicial, informado al usuario, sin incorporar registros de presencia física.
+Los estados temporales se calculan respecto de la fecha del servidor en Argentina, no respecto de la primera noche del filtro. Las solicitudes pendientes y rechazadas no bloquean disponibilidad. HOT-26 agrega el estado Estadía registrada y los movimientos reales hasta hoy. Las fechas futuras siguen las reservas previstas. Los bloqueos de limpieza y mantenimiento quedan pendientes en HOT-13.
 
-## Demostración con los ocho casos locales
+## Demostración opcional con los ocho casos del script
 
 Consultar del 05/10/2026 al 11/10/2026:
 
@@ -35,6 +35,6 @@ Los números corresponden a la primera carga en la base local vacía; otras inst
 
 ## Verificación
 
-`tests/run.php` contiene 127 verificaciones, incluidas 40 nuevas para el calendario: intervalos, fechas inválidas y arrays HTTP, año bisiesto, límites del rango, salida exclusiva, entradas y salidas simultáneas, reservas que atraviesan el rango, filtro por habitación, inactivas, estados previstos, autenticación, acceso de ambos roles, escape de nombres y ausencia de correos/tokens en la tabla.
+`tests/run.php` contiene 186 verificaciones, incluidas 40 nuevas para el calendario: intervalos, fechas inválidas y arrays HTTP, año bisiesto, límites del rango, salida exclusiva, entradas y salidas simultáneas, reservas que atraviesan el rango, filtro por habitación, inactivas, estados previstos, autenticación, acceso de ambos roles, escape de nombres y ausencia de correos/tokens en la tabla.
 
-Las pruebas utilizan una base efímera independiente. Esta implementación no cambia el esquema ni los ocho registros de demostración. El código, esquema y scripts se versionan juntos; la base de cada computadora se configura por separado. Ver docs/otra-pc.md.
+Las pruebas utilizan una base efímera independiente. La ampliación de operación agrega stays y room_images mediante scripts/migrate.php, conservando los registros existentes. El código, esquema y scripts se versionan juntos; la base de cada computadora se configura por separado. Ver docs/otra-pc.md.

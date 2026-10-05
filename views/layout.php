@@ -22,12 +22,21 @@ function pageStart(string $title, ?array $user = null): void {
 <button class="menu-toggle app-menu-toggle" type="button" aria-controls="navegacion" aria-expanded="false" hidden>Menú</button>
 <nav id="navegacion" class="app-nav" aria-label="Principal">
 <?php if ($user): ?><?php navLink('dashboard.php', 'Panel del día'); navLink('calendario.php', 'Calendario'); navLink('solicitudes.php', 'Solicitudes'); ?>
-<?php if ($user['role'] === 'admin'): ?><?php navLink('habitaciones-admin.php', 'Habitaciones'); ?><?php endif ?>
+<?php if ($user['role'] === 'admin'): ?><?php navLink('habitaciones-admin.php', 'Habitaciones'); navLink('usuarios.php', 'Usuarios'); ?><?php endif ?>
 <?php navLink('habitaciones.php', 'Ver catálogo'); ?>
 <form method="post" action="<?= e(url('logout.php')) ?>"><?php csrfInput() ?><button class="text-button">Cerrar sesión</button></form>
 <?php else: ?><?php navLink('habitaciones.php', 'Habitaciones'); navLink('reservar.php', 'Solicitar estadía'); navLink('login.php', 'Personal'); ?><?php endif ?></nav></div></header>
 <main id="contenido" class="container app-main" tabindex="-1"><p class="eyebrow"><?= $user ? 'GESTIÓN DEL HOTEL · ' . ($user['role'] === 'admin' ? 'ADMINISTRACIÓN' : 'RECEPCIÓN') : 'HOTEL AURORA' ?></p><h1><?= e($title) ?></h1>
 <?php if (isset($_SESSION['flash'])): ?><p class="notice success" role="status"><?= e($_SESSION['flash']) ?></p><?php unset($_SESSION['flash']); endif;
+}
+function roomGallery(int $roomId, string $name): void {
+    $images = hotel()->images($roomId);
+    if (!$images) return;
+    echo '<div class="room-gallery" role="group" aria-label="Fotos de ' . e($name) . '">';
+    foreach ($images as $i => $photo) {
+        echo '<a href="' . e(url('imagen.php?id=' . $photo['id'])) . '" target="_blank" rel="noopener"><img src="' . e(url('imagen.php?id=' . $photo['id'])) . '" alt="' . e($name . ' · Foto ' . ($i+1)) . '" loading="lazy" width="480" height="320"></a>';
+    }
+    echo '</div>';
 }
 function pageEnd(): void { ?>
 </main><footer class="site-footer"><div class="container"><p>Hotel Aurora · Demo académica. Usá datos ficticios.</p></div></footer></body></html>

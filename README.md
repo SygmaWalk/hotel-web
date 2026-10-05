@@ -26,13 +26,13 @@ Las funciones de los primeros tres sprints están implementadas. Los sprints sir
 
 El personal ingresa a `public/dashboard.php` después de iniciar sesión. El panel consulta MySQL y muestra llegadas y salidas previstas, solicitudes pendientes de todas las fechas, disponibilidad por habitación y reservas previstas para siete noches desde la fecha elegida. Permite cambiar fecha y actualizar sin recargar la página. La actualización cada minuto es opcional; se pausa con la pestaña oculta, una fecha sin consultar o un enlace del contenido enfocado. Sin JavaScript, el formulario GET sigue funcionando.
 
-Una reserva confirmada ocupa las noches desde la entrada inclusive hasta la salida exclusiva. Las habitaciones inactivas no forman parte del porcentaje disponible, pero sus llegadas y salidas siguen visibles. El panel no representa un check-in realizado: todavía no se registran llegadas físicas ni salidas físicas. Los pendientes muestran los ocho más antiguos y los movimientos diarios hasta veinte por tipo, con acceso al listado completo.
+Una reserva confirmada ocupa las noches desde la entrada inclusive hasta la salida exclusiva. Las habitaciones inactivas no forman parte del porcentaje disponible, pero sus llegadas y salidas siguen visibles. Estos indicadores siguen las fechas previstas. La sección Huéspedes alojados ahora muestra por separado las llegadas registradas que aún no tienen salida. Los pendientes muestran los ocho más antiguos y los movimientos diarios hasta veinte por tipo, con acceso al listado completo.
 
 La revisión del backlog y los criterios propuestos están en `docs/estado-y-backlog.md`. La guía para continuar en otra PC está en `docs/otra-pc.md`.
 
 ## Calendario de disponibilidad
 
-El personal también puede abrir **Calendario** para consultar de 1 a 31 noches por habitación, avanzar o retroceder el rango y abrir el detalle de las reservas. La salida libera la noche; pendientes y rechazadas no bloquean. La ocupación de hoy y del pasado se identifica explícitamente como prevista, sin acreditar un check-in real. Ver `docs/calendario.md` para reglas, recorrido y pruebas.
+El personal también puede abrir **Calendario** para consultar de 1 a 31 noches por habitación, avanzar o retroceder el rango y abrir el detalle de las reservas. La salida libera la noche; pendientes y rechazadas no bloquean. El calendario distingue ocupación prevista y estadías registradas mediante check-in y check-out. Ver `docs/calendario.md` para reglas, recorrido y pruebas.
 
 ## Carpetas y recorrido de una petición
 
@@ -49,7 +49,7 @@ Empezá por `public/reservar.php`, luego `src/Validation.php`, `src/Hotel.php` (
 
 ## Instalar en otra computadora
 
-Requisitos: XAMPP con PHP 8.2 o superior, extensiones PDO MySQL y mbstring, y MariaDB/MySQL. Para las pruebas también se necesita cURL y proc_open (incluidos en este XAMPP).
+Requisitos: XAMPP con PHP 8.2 o superior, extensiones PDO MySQL, mbstring y fileinfo, y MariaDB/MySQL. Para las pruebas también se necesita cURL y proc_open (incluidos en este XAMPP).
 
 1. Clonar el repositorio (o ejecutar `git pull --ff-only origin main` si ya está clonado) en `C:\xampp\htdocs\hotel-web`.
 2. Iniciar MySQL y Apache.
@@ -80,3 +80,11 @@ El acceso de la aplicación usa un usuario con permisos limitados a su base. La 
 ## Foto ilustrativa
 
 [Bedroom hotel interior with open door window](https://commons.wikimedia.org/wiki/File:Bedroom_hotel_interior_with_open_door_window._(51536308276).jpg), de Nenad Stojkovic. [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). Se recorta visualmente; no representa un hotel real llamado Aurora.
+
+## Llegadas, fotos y cuentas del personal
+
+HOT-26, HOT-31, HOT-32 y HOT-33 implementados: registro de llegada/salida con empleado y hora; fotos de habitaciones; límite de un año en reservas/calendario; creación de usuarios staff por administración. Ver [guía de operación](docs/operacion.md).
+
+En instalaciones existentes ejecutar `C:\xampp\php\php.exe scripts/migrate.php` después de actualizar el código. Las instalaciones nuevas incluyen las tablas mediante setup.php. Los archivos de fotos quedan en storage/rooms y no se suben a Git; para otra PC deben copiarse junto con la base de datos.
+
+Validación de esta ampliación: 186 comprobaciones del sistema y 17 de carga demo, sobre bases temporales.

@@ -25,14 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 pageStart('Solicitá tu estadía');
 ?>
 <p class="intro">Enviar una solicitud no confirma una reserva. El personal revisará las fechas y la habitación elegida. Demo: usá datos ficticios.</p>
+<p class="data-note">Entrada y salida deben quedar dentro del próximo año: hasta <?= e(bookingLimit()) ?>.</p>
 <?php errorSummary($errors) ?>
 <?php if (!$rooms): ?><p class="notice">No hay habitaciones activas. Intentá nuevamente más adelante.</p><?php else: ?>
 <form class="form-panel" method="post" data-reservation-form>
 <?php csrfInput() ?><input type="hidden" name="submission_token" value="<?= e($token) ?>">
 <?php inputField('guest_name', 'Nombre y apellido', $data, $errors, 'text', 'required maxlength="100" autocomplete="name"') ?>
 <?php inputField('email', 'Correo electrónico', $data, $errors, 'email', 'required maxlength="190" autocomplete="email"') ?>
-<div class="form-grid"><div><?php inputField('check_in', 'Entrada', $data, $errors, 'date', 'required min="' . date('Y-m-d') . '" max="2099-12-30"') ?></div>
-<div><?php inputField('check_out', 'Salida', $data, $errors, 'date', 'required max="2099-12-31"') ?></div></div>
+<div class="form-grid"><div><?php inputField('check_in', 'Entrada', $data, $errors, 'date', 'required min="' . date('Y-m-d') . '" max="' . (new DateTimeImmutable(bookingLimit()))->modify('-1 day')->format('Y-m-d') . '"') ?></div>
+<div><?php inputField('check_out', 'Salida', $data, $errors, 'date', 'required max="' . bookingLimit() . '"') ?></div></div>
 <label for="room_id">Habitación</label><select id="room_id" name="room_id" required <?= isset($errors['room_id']) ? 'aria-invalid="true" aria-describedby="room_id-error"' : '' ?>>
 <option value="">Elegí una habitación</option>
 <?php foreach ($rooms as $room): ?><option value="<?= e($room['id']) ?>" data-rate="<?= e($room['nightly_rate']) ?>" <?= (string) $room['id'] === ($data['room_id'] ?? '') ? 'selected' : '' ?>><?= e($room['code'] . ' · ' . $room['name'] . ' · Hasta ' . $room['capacity'] . ' personas') ?></option><?php endforeach ?></select>

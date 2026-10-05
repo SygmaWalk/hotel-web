@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'save') {
             [$data, $errors] = validateRoom($_POST);
             if (!$errors) {
-                hotel()->saveRoom($data, $id);
+                hotel()->saveRoomImages($data, $id, $_FILES['images'] ?? [], (int) $user['id']);
                 flash('Datos de la habitación guardados.');
                 redirect('habitaciones-admin.php');
             }
@@ -32,11 +32,15 @@ pageStart('Administrar habitaciones', $user);
 errorSummary($errors);
 ?>
 <div class="admin-grid"><section><h2><?= $id === null ? 'Nueva habitación' : 'Editar habitación' ?></h2>
-<form method="post" id="room-form" class="form-panel"><?php csrfInput() ?><input type="hidden" name="action" value="save">
+<form method="post" id="room-form" class="form-panel" enctype="multipart/form-data"><?php csrfInput() ?><input type="hidden" name="action" value="save">
 <?php inputField('code', 'Código único', $data, $errors, 'text', 'required maxlength="20"') ?>
 <?php inputField('name', 'Nombre', $data, $errors, 'text', 'required maxlength="100"') ?>
 <?php inputField('capacity', 'Capacidad (personas)', $data, $errors, 'number', 'required min="1" max="100" step="1"') ?>
 <?php inputField('nightly_rate', 'Tarifa por noche (ARS)', $data, $errors, 'number', 'required min="0" max="99999999.99" step="0.01"') ?>
+<label for="images">Fotos de la habitación (opcionales)</label>
+<input id="images" name="images[]" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="image-help">
+<p id="image-help" class="data-note">Hasta 5 fotos por habitación, JPG, PNG o WebP. Máximo 1 MB por foto. Si hay errores, seleccioná los archivos nuevamente.</p>
+<?php if ($id !== null): ?><?php roomGallery($id, $data['name'] ?? 'Habitación'); ?><?php endif ?>
 <button class="button">Guardar habitación</button> <a href="<?= e(url('habitaciones-admin.php')) ?>">Nueva / cancelar</a></form>
 <?php if ($id !== null && hotel()->room($id)['active']): ?>
 <form method="post" class="form-panel danger-zone"><?php csrfInput() ?><input type="hidden" name="action" value="deactivate">

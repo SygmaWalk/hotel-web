@@ -19,6 +19,15 @@ function positiveId(string $value): bool
     return ctype_digit($value) && strlen($value) <= 10 && (int) $value > 0 && (int) $value <= 4294967295;
 }
 
+function bookingLimit(?DateTimeImmutable $today = null): string
+{
+    $today ??= new DateTimeImmutable('today');
+    $year = (int) $today->format('Y') + 1;
+    $month = $today->format('m');
+    $lastDay = (int) (new DateTimeImmutable("$year-$month-01"))->format('t');
+    return sprintf('%04d-%02d-%02d', $year, (int) $month, min((int) $today->format('d'), $lastDay));
+}
+
 function validateRequest(array $input): array
 {
     $data = [];
@@ -32,11 +41,11 @@ function validateRequest(array $input): array
     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL) || strlen($data['email']) > 190) {
         $errors['email'] = 'Ingresá un correo válido de hasta 190 caracteres.';
     }
-    if (!validDate($data['check_in']) || $data['check_in'] < date('Y-m-d') || $data['check_in'] > '2099-12-30') {
-        $errors['check_in'] = 'La entrada debe ser una fecha válida desde hoy y anterior a 2100.';
+    if (!validDate($data['check_in']) || $data['check_in'] < date('Y-m-d') || $data['check_in'] >= bookingLimit()) {
+        $errors['check_in'] = 'La entrada debe ser desde hoy y anterior al ' . bookingLimit() . ', para permitir al menos una noche.';
     }
-    if (!validDate($data['check_out']) || $data['check_out'] <= $data['check_in'] || $data['check_out'] > '2099-12-31') {
-        $errors['check_out'] = 'La salida debe ser posterior a la entrada y anterior a 2100.';
+    if (!validDate($data['check_out']) || $data['check_out'] <= $data['check_in'] || $data['check_out'] > bookingLimit()) {
+        $errors['check_out'] = 'La salida debe ser posterior a la entrada y no superar el ' . bookingLimit() . '.';
     }
     if (!positiveId($data['room_id'])) {
         $errors['room_id'] = 'Seleccioná una habitación válida.';

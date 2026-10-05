@@ -313,3 +313,8 @@ tbody tr:hover { background:#f5f8f5; }
     .calendar-table th:first-child { width:115px; min-width:115px; }
     .calendar-table th, .calendar-table td { width:135px; min-width:135px; padding:.65rem; }
 }
+.room-gallery { display:flex; overflow-x:auto; gap:.7rem; margin-block:1rem; scroll-snap-type:x proximity; }
+.room-gallery a { flex:0 0 85%; scroll-snap-align:start; }
+.room-gallery img { width:100%; height:auto; aspect-ratio:1.5; object-fit:cover; border-radius:4px; }
+.calendar-state.occupied, .calendar-cell.occupied { background:#dcefee; color:#143e3b; }
+.spaced-heading { margin-top:2rem; }

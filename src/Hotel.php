@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/Validation.php';
+require_once __DIR__ . '/Operations.php';
 
 final class Hotel
 {
+    use HotelOperations;
     public function __construct(private PDO $pdo) {}
 
     private function query(string $sql, array $params = []): PDOStatement
@@ -63,8 +65,8 @@ final class Hotel
     public function calendar(string $from, string $to, ?int $roomId = null): array
     {
         foreach ([$from, $to] as $date) {
-            if (!validDate($date) || $date < '2000-01-01' || $date > '2099-12-31') {
-                throw new DomainException('Elegí fechas válidas entre 2000 y 2099.');
+            if (!validDate($date) || $date < '2000-01-01' || $date > bookingLimit()) {
+                throw new DomainException('Elegí fechas desde 2000 hasta ' . bookingLimit() . ' (un año de anticipación).');
             }
         }
         $start = new DateTimeImmutable($from);
@@ -85,7 +87,7 @@ final class Hotel
         $cells = [];
         foreach ($rooms as $room) {
             foreach ($days as $day) {
-                $cells[$room['id']][$day] = ['state' => $room['active'] ? 'free' : 'inactive', 'stays' => [], 'arrivals' => [], 'departures' => []];
+                $cells[$room['id']][$day] = ['state' => $room['active'] ? 'free' : 'inactive', 'stays' => [], 'arrivals' => [], 'departures' => [], 'actuals' => []];
             }
         }
         foreach ($reservations as $reservation) {
@@ -99,6 +101,17 @@ final class Hotel
                     $cell['state'] = $day <= $today ? 'expected' : 'reserved';
                 }
                 unset($cell);
+            }
+        }
+        foreach ($this->actualStays($from, $to) as $stay) {
+            foreach ($days as $day) {
+                if (!isset($cells[$stay['room_id']][$day]) || $day > $today) continue;
+                $arrival = substr($stay['checked_in_at'], 0, 10);
+                $departure = $stay['checked_out_at'] ? substr($stay['checked_out_at'], 0, 10) : null;
+                if ($arrival <= $day && ($departure === null || $departure >= $day)) {
+                    $cells[$stay['room_id']][$day]['actuals'][] = $stay;
+                    if ($departure === null || $departure > $day) $cells[$stay['room_id']][$day]['state'] = 'occupied';
+                }
             }
         }
         return compact('from', 'to', 'today', 'days', 'rooms', 'allRooms', 'cells');
@@ -172,6 +185,7 @@ final class Hotel
             if ($action === 'confirmed') {
                 if (!$room['active']) throw new DomainException('La habitación está inactiva.');
                 if ($request['check_in'] < date('Y-m-d')) throw new DomainException('La fecha de entrada ya pasó.');
+                if ($request['check_out'] > bookingLimit()) throw new DomainException('La estadía debe finalizar dentro del próximo año.');
                 // Intervalos [entrada, salida): salir y entrar el mismo día NO se solapan.
                 $overlap = $this->query("SELECT id FROM reservations WHERE room_id = ? AND status = 'confirmed' AND check_in < ? AND check_out > ? LIMIT 1 FOR UPDATE", [$room['id'], $request['check_out'], $request['check_in']])->fetchColumn();
                 if ($overlap) throw new DomainException('La habitación ya está ocupada en esas fechas.');
