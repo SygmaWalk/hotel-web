@@ -24,6 +24,86 @@ final class Hotel
         return $this->query('SELECT * FROM rooms WHERE id = ?', [$id])->fetch() ?: null;
     }
 
+    public function dashboard(string $date): array
+    {
+        if (!validDate($date) || $date < '2000-01-01' || $date > '2099-12-31') {
+            throw new DomainException('Elegí una fecha válida entre 2000 y 2099.');
+        }
+        $summary = $this->query("SELECT
+            COALESCE(SUM(status = 'pending'), 0) AS pending,
+            COALESCE(SUM(status = 'confirmed' AND check_in = ?), 0) AS arrivals,
+            COALESCE(SUM(status = 'confirmed' AND check_out = ?), 0) AS departures
+            FROM reservations", [$date, $date])->fetch();
+        $rooms = $this->query("SELECT h.id, h.code, h.name, h.active,
+            EXISTS(SELECT 1 FROM reservations r WHERE r.room_id = h.id
+                AND r.status = 'confirmed' AND r.check_in <= ? AND r.check_out > ?) AS reserved
+            FROM rooms h ORDER BY h.code", [$date, $date])->fetchAll();
+        $active = count(array_filter($rooms, fn(array $room): bool => (bool) $room['active']));
+        $reserved = count(array_filter($rooms, fn(array $room): bool => $room['active'] && $room['reserved']));
+        $summary = array_map('intval', $summary);
+        $summary += ['active' => $active, 'reserved' => $reserved, 'available' => $active - $reserved,
+            'inactive' => count($rooms) - $active, 'percentage' => $active ? (int) round(100 * $reserved / $active) : 0];
+        // Las llegadas y salidas incluyen habitaciones desactivadas: requieren atención igualmente.
+        $select = 'SELECT r.id, r.guest_name, r.check_in, r.check_out, h.code, h.active FROM reservations r JOIN rooms h ON h.id = r.room_id';
+        $arrivals = $this->query($select . " WHERE r.status = 'confirmed' AND r.check_in = ? ORDER BY h.code, r.id LIMIT 20", [$date])->fetchAll();
+        $departures = $this->query($select . " WHERE r.status = 'confirmed' AND r.check_out = ? ORDER BY h.code, r.id LIMIT 20", [$date])->fetchAll();
+        $pending = $this->query($select . " WHERE r.status = 'pending' ORDER BY r.created_at, r.id LIMIT 8")->fetchAll();
+        $days = []; $params = [];
+        for ($i = 0; $i < 7; $i++) {
+            $days[] = 'SELECT CAST(? AS DATE) AS day';
+            $params[] = (new DateTimeImmutable($date))->modify('+' . $i . ' days')->format('Y-m-d');
+        }
+        $week = $this->query("SELECT dates.day, COUNT(DISTINCT h.id) AS reserved FROM (" . implode(' UNION ALL ', $days) . ") dates
+            LEFT JOIN reservations r ON r.status = 'confirmed' AND r.check_in <= dates.day AND r.check_out > dates.day
+            LEFT JOIN rooms h ON h.id = r.room_id AND h.active = 1
+            GROUP BY dates.day ORDER BY dates.day", $params)->fetchAll();
+        return compact('date', 'summary', 'rooms', 'arrivals', 'departures', 'pending', 'week');
+    }
+
+    public function calendar(string $from, string $to, ?int $roomId = null): array
+    {
+        foreach ([$from, $to] as $date) {
+            if (!validDate($date) || $date < '2000-01-01' || $date > '2099-12-31') {
+                throw new DomainException('Elegí fechas válidas entre 2000 y 2099.');
+            }
+        }
+        $start = new DateTimeImmutable($from);
+        $length = (int) $start->diff(new DateTimeImmutable($to))->format('%r%a') + 1;
+        if ($length < 1 || $length > 31) throw new DomainException('Consultá entre 1 y 31 noches, con la fecha final igual o posterior a la inicial.');
+        $allRooms = $this->rooms(true);
+        $rooms = $roomId === null ? $allRooms : array_values(array_filter($allRooms, fn(array $room): bool => (int) $room['id'] === $roomId));
+        if ($roomId !== null && !$rooms) throw new DomainException('Elegí una habitación existente.');
+        $days = [];
+        for ($i = 0; $i < $length; $i++) $days[] = $start->modify('+' . $i . ' days')->format('Y-m-d');
+        // Incluye las salidas del primer día, aunque ya no ocupen esa noche.
+        $sql = "SELECT id, room_id, guest_name, check_in, check_out FROM reservations
+            WHERE status = 'confirmed' AND check_in <= ? AND check_out >= ?";
+        $params = [$to, $from];
+        if ($roomId !== null) { $sql .= ' AND room_id = ?'; $params[] = $roomId; }
+        $reservations = $this->query($sql . ' ORDER BY check_in, id', $params)->fetchAll();
+        $today = date('Y-m-d');
+        $cells = [];
+        foreach ($rooms as $room) {
+            foreach ($days as $day) {
+                $cells[$room['id']][$day] = ['state' => $room['active'] ? 'free' : 'inactive', 'stays' => [], 'arrivals' => [], 'departures' => []];
+            }
+        }
+        foreach ($reservations as $reservation) {
+            if (!isset($cells[$reservation['room_id']])) continue;
+            foreach ($days as $day) {
+                $cell =& $cells[$reservation['room_id']][$day];
+                if ($reservation['check_in'] === $day) $cell['arrivals'][] = $reservation;
+                if ($reservation['check_out'] === $day) $cell['departures'][] = $reservation;
+                if ($reservation['check_in'] <= $day && $reservation['check_out'] > $day) {
+                    $cell['stays'][] = $reservation;
+                    $cell['state'] = $day <= $today ? 'expected' : 'reserved';
+                }
+                unset($cell);
+            }
+        }
+        return compact('from', 'to', 'today', 'days', 'rooms', 'allRooms', 'cells');
+    }
+
     public function submit(array $input, string $token): int
     {
         [$data, $errors] = validateRequest($input);

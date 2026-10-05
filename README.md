@@ -11,16 +11,28 @@ Proyecto académico con necesidades y datos ficticios, pensado para aprender bac
 
 La base se llama `hotel_aurora`. Contiene tres habitaciones ficticias. Una solicitud pendiente no ocupa una habitación hasta que el personal la confirma. Este proyecto no envía correos ni procesa pagos.
 
-## Estado al 21 de septiembre de 2026
+## Estado al 5 de octubre de 2026
 
 | Sprint | Historias | Funcionalidad |
 | --- | --- | --- |
 | 1 · 7–13 septiembre | HOT-2 a HOT-4 | Presentación, catálogo y validación de formulario |
 | 2 · 14–20 septiembre | HOT-5 a HOT-7 | Persistencia con PDO, sesiones y consulta de solicitudes |
 | 3 · 21–27 septiembre | HOT-8 a HOT-10 | Confirmación sin solapamientos y administración de habitaciones |
-| 4 · 28 septiembre–4 octubre | HOT-11 a HOT-15 | Pendiente: panel diario, calendario, limpieza, alertas e historial |
+| 4 · 28 septiembre–4 octubre | HOT-11 a HOT-15 | Panel diario y calendario implementados; pendientes limpieza, alertas e historial |
 
 Las funciones de los primeros tres sprints están implementadas. Los sprints sirven para organización personal; sus fechas originales se conservan para distinguir trabajo planificado de recuperación.
+
+### Panel del día
+
+El personal ingresa a `public/dashboard.php` después de iniciar sesión. El panel consulta MySQL y muestra llegadas y salidas previstas, solicitudes pendientes de todas las fechas, disponibilidad por habitación y reservas previstas para siete noches desde la fecha elegida. Permite cambiar fecha y actualizar sin recargar la página. La actualización cada minuto es opcional; se pausa con la pestaña oculta, una fecha sin consultar o un enlace del contenido enfocado. Sin JavaScript, el formulario GET sigue funcionando.
+
+Una reserva confirmada ocupa las noches desde la entrada inclusive hasta la salida exclusiva. Las habitaciones inactivas no forman parte del porcentaje disponible, pero sus llegadas y salidas siguen visibles. El panel no representa un check-in realizado: todavía no se registran llegadas físicas ni salidas físicas. Los pendientes muestran los ocho más antiguos y los movimientos diarios hasta veinte por tipo, con acceso al listado completo.
+
+La revisión del backlog y los criterios propuestos están en `docs/estado-y-backlog.md`. La guía para continuar en otra PC está en `docs/otra-pc.md`.
+
+## Calendario de disponibilidad
+
+El personal también puede abrir **Calendario** para consultar de 1 a 31 noches por habitación, avanzar o retroceder el rango y abrir el detalle de las reservas. La salida libera la noche; pendientes y rechazadas no bloquean. La ocupación de hoy y del pasado se identifica explícitamente como prevista, sin acreditar un check-in real. Ver `docs/calendario.md` para reglas, recorrido y pruebas.
 
 ## Carpetas y recorrido de una petición
 
@@ -39,7 +51,7 @@ Empezá por `public/reservar.php`, luego `src/Validation.php`, `src/Hotel.php` (
 
 Requisitos: XAMPP con PHP 8.2 o superior, extensiones PDO MySQL y mbstring, y MariaDB/MySQL. Para las pruebas también se necesita cURL y proc_open (incluidos en este XAMPP).
 
-1. Clonar el repositorio en `C:\xampp\htdocs\hotel-web`.
+1. Clonar el repositorio (o ejecutar `git pull --ff-only origin main` si ya está clonado) en `C:\xampp\htdocs\hotel-web`.
 2. Iniciar MySQL y Apache.
 3. Desde esa carpeta ejecutar:
    `C:\xampp\php\php.exe scripts/setup.php`.
@@ -49,9 +61,15 @@ El instalador asume el root local sin contraseña de una instalación nueva de X
 
 Cada computadora tiene su propia base. Git sincroniza el código y el esquema, no las solicitudes ni contraseñas locales. Para un servidor externo, la raíz pública debe ser `public/`; la instalación actual también bloquea las otras carpetas mediante Apache.
 
-## Comprobar
+## Datos de demostración
+
+Después de instalar, ejecutar `C:\xampp\php\php.exe scripts/seed-demo.php 2026-10-05` para cargar ocho casos ficticios sobre las habitaciones existentes. Se agregan cuatro confirmadas, tres pendientes y una rechazada. La carga conserva registros previos, cancela ante solapamientos confirmados y no duplica ni cambia fechas al repetirse. Sin argumento usa el día local de la primera carga. Ver `docs/demostracion.md` para el guion y los indicadores esperados.
+
+## Comprobar la instalación
 
 `C:\xampp\php\php.exe tests/run.php`
+
+`C:\xampp\php\php.exe tests/seed-demo.php`
 
 La suite crea y elimina únicamente su propia base `hotel_test_<aleatorio>`, inicia un servidor HTTP temporal y comprueba validaciones, consultas, roles, CSRF, reenvíos y dos confirmaciones concurrentes. No modifica hotel_aurora. Puede configurarse con `HOTEL_TEST_DSN`, `HOTEL_TEST_USER` y `HOTEL_TEST_PASSWORD`.
 

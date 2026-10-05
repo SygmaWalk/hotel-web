@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/src/bootstrap.php';
-if (currentUser()) redirect('solicitudes.php');
+if (currentUser()) redirect('dashboard.php');
 $errors = []; $data = ['email' => field($_POST, 'email')];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $identity = hash('sha256', strtolower($data['email']));
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION = ['user_id' => $user['id'], 'csrf' => bin2hex(random_bytes(32))];
             $statement = db()->prepare('DELETE FROM login_attempts WHERE identity_hash = ?');
             $statement->execute([$identity]);
-            redirect('solicitudes.php');
+            redirect('dashboard.php');
         }
         $statement = db()->prepare('INSERT INTO login_attempts (identity_hash, failures, last_failure) VALUES (?, 1, NOW()) ON DUPLICATE KEY UPDATE failures = IF(last_failure < DATE_SUB(NOW(), INTERVAL 15 MINUTE), 1, failures + 1), last_failure = NOW()');
         $statement->execute([$identity]);

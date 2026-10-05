@@ -57,6 +57,18 @@ try {
     $insert->execute(['staff@example.test', password_hash($staffPassword, PASSWORD_DEFAULT), 'staff']);
     check(password_verify($adminPassword, $pdo->query('SELECT password_hash FROM users LIMIT 1')->fetchColumn()), 'hash de contraseña');
     check($hotel->rooms() === [], 'catálogo vacío');
+    $emptyDashboard = $hotel->dashboard(date('Y-m-d'));
+    check($emptyDashboard['summary']['active'] === 0 && $emptyDashboard['summary']['percentage'] === 0 && $emptyDashboard['rooms'] === [], 'panel sin habitaciones ni división por cero');
+    check(count($emptyDashboard['week']) === 7 && array_sum(array_column($emptyDashboard['week'], 'reserved')) === 0, 'semana vacía del panel');
+    check($hotel->calendar('2026-10-05', '2026-10-11')['rooms'] === [], 'calendario sin habitaciones');
+    foreach ([['2027-02-30','2027-03-01'], ['','2026-10-05'], ['1999-12-31','2000-01-01'], ['2099-12-31','2100-01-01'], ['2026-10-06','2026-10-05'], ['2026-10-01','2026-11-01']] as [$badFrom, $badTo]) {
+        rejected(fn() => $hotel->calendar($badFrom, $badTo), 'calendario rechaza fecha o rango inválido');
+    }
+    check(count($hotel->calendar('2028-02-28', '2028-03-01')['days']) === 3, 'calendario incluye día bisiesto y cambio de mes');
+    check(count($hotel->calendar('2099-12-01', '2099-12-31')['days']) === 31, 'calendario admite 31 noches y límite superior');
+    foreach (['2027-02-30', '', '1999-12-31', '2100-01-01', "2026-10-05' OR 1=1"] as $badDate) {
+        rejected(fn() => $hotel->dashboard($badDate), 'fecha inválida del panel');
+    }
     $room = ['code'=>'T-101', 'name'=>'Habitación de prueba', 'capacity'=>'2', 'nightly_rate'=>'65000.00'];
     $roomId = $hotel->saveRoom($room, null);
     rejected(fn() => $hotel->saveRoom($room, null), 'código único');
@@ -119,6 +131,37 @@ try {
     $q = $pdo->prepare("SELECT COUNT(*) FROM reservations WHERE room_id = ? AND status = 'confirmed'");
     $q->execute([$raceRoom]);
     check((int) $q->fetchColumn() === 1, 'sin doble reserva en base');
+    $overview = $hotel->dashboard($day(20));
+    check($overview['summary']['arrivals'] === 2 && $overview['summary']['departures'] === 0, 'llegadas incluyen reserva en habitación inactiva');
+    check($overview['summary']['pending'] === 2 && count($overview['pending']) === 2, 'pendientes globales excluyen confirmadas y rechazadas');
+    check($overview['summary']['active'] === 1 && $overview['summary']['reserved'] === 1 && $overview['summary']['available'] === 0, 'disponibilidad excluye habitaciones inactivas');
+    check($overview['summary']['percentage'] === 100 && count($overview['rooms']) === 3, 'inventario y porcentaje del panel');
+    check(array_map('intval', array_column($overview['week'], 'reserved')) === [1,1,1,0,0,0,0], 'siete noches con salida exclusiva');
+    $turnover = $hotel->dashboard($day(23));
+    check($turnover['summary']['arrivals'] === 1 && $turnover['summary']['departures'] === 2 && $turnover['summary']['available'] === 1, 'entrada y salida el mismo día');
+    check($hotel->dashboard($day(19))['summary']['reserved'] === 0, 'fecha anterior a la llegada libre');
+
+    $calendar = $hotel->calendar($day(19), $day(24));
+    check(count($calendar['rooms']) === 3 && count($calendar['days']) === 6, 'calendario incluye habitaciones inactivas y noches extremas');
+    check($calendar['cells'][$raceRoom][$day(19)]['state'] === 'free', 'noche anterior a entrada libre');
+    check($calendar['cells'][$raceRoom][$day(20)]['state'] === 'reserved', 'noche futura confirmada reservada');
+    check($calendar['cells'][$raceRoom][$day(23)]['state'] === 'free' && count($calendar['cells'][$raceRoom][$day(23)]['departures']) === 1, 'salida libera noche y conserva movimiento');
+    check($calendar['cells'][$room2][$day(20)]['state'] === 'inactive' && $calendar['cells'][$room2][$day(20)]['stays'] === [], 'pendiente no bloquea habitación inactiva');
+    check(count($calendar['cells'][$roomId][$day(21)]['stays']) === 1, 'rechazada no aparece como estadía');
+    check(count($calendar['cells'][$roomId][$day(23)]['arrivals']) === 1 && count($calendar['cells'][$roomId][$day(23)]['departures']) === 1, 'calendario distingue entrada y salida el mismo día');
+    check($calendar['cells'][$roomId][$day(23)]['stays'][0]['id'] === $adjacent, 'salida exclusiva conserva solo siguiente reserva');
+    check($calendar['cells'][$roomId][$day(20)]['stays'][0]['id'] === $id, 'reserva de habitación inactiva permanece visible');
+    $filteredCalendar = $hotel->calendar($day(21), $day(21), $roomId);
+    check(count($filteredCalendar['rooms']) === 1 && count($filteredCalendar['allRooms']) === 3 && count($filteredCalendar['days']) === 1, 'filtro por habitación y rango de una noche');
+    check($filteredCalendar['cells'][$roomId][$day(21)]['stays'][0]['id'] === $id, 'reserva iniciada antes del rango incluida');
+    check(count($hotel->calendar($day(24), $day(24), $roomId)['cells'][$roomId][$day(24)]['departures']) === 1, 'salida en inicio del rango incluida');
+    rejected(fn() => $hotel->calendar($day(20), $day(21), 999999), 'habitación inexistente rechazada');
+    $historical = $pdo->prepare("INSERT INTO reservations (room_id, guest_name, email, check_in, check_out, nightly_rate, submission_token, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed')");
+    $historical->execute([$raceRoom, '<script>calendarTest()</script>', 'private@example.test', $day(-2), $day(1), '10', bin2hex(random_bytes(32))]);
+    $historyId = (int) $pdo->lastInsertId();
+    $historyCalendar = $hotel->calendar($day(-1), $day(1), $raceRoom);
+    check($historyCalendar['cells'][$raceRoom][$day(-1)]['state'] === 'expected' && $historyCalendar['cells'][$raceRoom][$day(0)]['state'] === 'expected', 'pasado y hoy se distinguen como ocupación prevista');
+    check($historyCalendar['cells'][$raceRoom][$day(1)]['state'] === 'free', 'salida de ocupación prevista no bloquea');
 
     // Servidor HTTP aislado: mismo código, otra base, ningún dato del hotel real.
     $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
@@ -140,6 +183,8 @@ try {
     check($code === 200 && str_contains($body, 'T-RACE') && !str_contains($body, 'T-101'), 'catálogo SQL activo');
     [$code,$body,$headers] = request('solicitudes.php');
     check($code === 303 && str_contains($headers, 'login.php'), 'panel privado');
+    check(request('dashboard.php')[0] === 303, 'dashboard requiere sesión');
+    check(request('calendario.php')[0] === 303, 'calendario requiere sesión');
     check(request('logout.php')[0] === 405, 'logout requiere POST');
     check(request('reservar.php', [], 'guest', 'PUT')[0] === 405, 'método inválido');
     $body = request('reservar.php?room_id='.$raceRoom)[1];
@@ -162,6 +207,29 @@ try {
     check($oldCookie !== file_get_contents($runtime.'/admin.cookies'), 'regeneración sesión');
     [$code,$body] = request('solicitudes.php',[],'admin'); $adminCsrf = token($body);
     check($code === 200 && str_contains($body, $valid['guest_name']), 'personal consulta solicitudes');
+    [$code,$body] = request('dashboard.php?date='.$day(20),[],'admin');
+    check($code === 200 && str_contains($body,'id="dashboard-content"') && str_contains($body,'data-date="'.$day(20).'"'), 'dashboard administrador y fecha consultada');
+    check(str_contains($body,'aria-current="page">Panel del día') && str_contains($body,'solicitud.php?id='.$id), 'navegación activa y enlaces a detalle');
+    [$calendarCode, $calendarBody] = request('calendario.php?from='.$day(20).'&to='.$day(24).'&room_id='.$roomId, [], 'admin');
+    check($calendarCode === 200 && str_contains($calendarBody, 'aria-current="page">Calendario') && str_contains($calendarBody, 'solicitud.php?id='.$id), 'calendario privado integrado con navegación y detalle');
+    check(str_contains($calendarBody, '1 habitación · 5 noches') && str_contains($calendarBody, 'room_id='.$roomId), 'calendario muestra rango y conserva filtro en navegación');
+    check(!str_contains($calendarBody, $sameToken) && !str_contains($calendarBody, $valid['email']), 'calendario no expone tokens ni correos');
+    foreach (['from=2027-02-30', 'from[]=2026-10-05', 'to[]=2026-10-05', 'from=2026-10-01&to=2026-11-01', 'room_id[]=1', 'room_id=0', 'room_id=999999', 'from=2026-10-06&to=2026-10-05'] as $badQuery) {
+        check(request('calendario.php?'.$badQuery, [], 'admin')[0] === 422, 'filtro inválido HTTP calendario');
+    }
+    $calendarBody = request('calendario.php?from='.$day(0).'&to='.$day(0), [], 'admin')[1];
+    check(str_contains($calendarBody, '&lt;script&gt;calendarTest()&lt;/script&gt;') && !str_contains($calendarBody, '<script>calendarTest()'), 'calendario escapa nombres de reservas');
+    $calendarBody = request('calendario.php?from=2099-12-31', [], 'admin')[1];
+    check(str_contains($calendarBody, '1 noche') && !str_contains($calendarBody, 'Siguientes →'), 'calendario no navega fuera del límite superior');
+    check(!str_contains(request('calendario.php?from=2000-01-01', [], 'admin')[1], '← Anteriores'), 'calendario no navega fuera del límite inferior');
+    check(!str_contains($body,$sameToken) && !str_contains($body,$valid['email']), 'panel no expone tokens de envío ni correo del huésped');
+    foreach (['2027-02-30','', '2100-01-01'] as $badDate) check(request('dashboard.php?date='.rawurlencode($badDate),[],'admin')[0] === 422, 'fecha inválida HTTP panel');
+    check(request('dashboard.php?date[]=2026-10-05',[],'admin')[0] === 422, 'fecha array inválida HTTP panel');
+    [$code,$body] = request('dashboard.php?date='.$day(200),[],'admin');
+    check($code === 200 && str_contains($body,'No hay llegadas previstas'), 'panel cambia fecha y muestra estado vacío');
+    $pdo->prepare('UPDATE reservations SET guest_name = ? WHERE id = ?')->execute(['<script>alert(1)</script>', $inactiveRequest]);
+    $body = request('dashboard.php',[],'admin')[1];
+    check(str_contains($body,'&lt;script&gt;alert(1)&lt;/script&gt;') && !str_contains($body,'<script>alert(1)</script>'), 'panel escapa nombre del huésped');
     check(request('solicitudes.php?status=inventado',[],'admin')[0] === 422, 'filtro inválido HTTP');
     check(str_contains(request('solicitudes.php?date='.$day(200),[],'admin')[1], 'No hay solicitudes'), 'estado vacío panel');
     check(request('solicitud.php?id=999999',[],'admin')[0] === 404, 'detalle inexistente');
@@ -171,6 +239,11 @@ try {
     $staffForm = request('login.php',[],'staff')[1];
     check(request('login.php',['csrf'=>token($staffForm),'email'=>'staff@example.test','password'=>$staffPassword],'staff','POST')[0] === 303, 'login recepción');
     $staffBody = request('solicitudes.php',[],'staff')[1]; $staffCsrf=token($staffBody);
+    [$code,$body] = request('dashboard.php',[],'staff');
+    check($code === 200 && !str_contains($body,'habitaciones-admin.php'), 'dashboard recepción sin enlace administrativo');
+    [$code,$body] = request('calendario.php', [], 'staff');
+    check($code === 200 && str_contains($body, 'Calendario de disponibilidad') && !str_contains($body, 'habitaciones-admin.php'), 'recepción accede al calendario sin administrar habitaciones');
+    check(str_contains(request('habitaciones.php',[],'staff')[1],'Panel del día'), 'catálogo conserva navegación de sesión');
     check(request('habitaciones-admin.php',[],'staff')[0] === 403, 'recepción no administra');
     check(request('habitaciones-admin.php',['csrf'=>$staffCsrf,'action'=>'save',...$room],'staff','POST')[0] === 403, 'autorización POST servidor');
     check(request('habitaciones-admin.php',['csrf'=>$adminCsrf,'action'=>'save',...$room,'code'=>'T-HTTP'],'admin','POST')[0] === 303, 'alta HTTP');

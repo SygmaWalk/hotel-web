@@ -19,8 +19,8 @@ $servicios = [
     <meta name="description" content="Conocé Hotel Aurora, sus servicios y ubicación. Sitio académico con información de ejemplo.">
     <meta name="theme-color" content="#172e39">
     <title><?= htmlspecialchars($nombreHotel, ENT_QUOTES, 'UTF-8') ?> | Un lugar para descansar</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <script src="js/navigation.js" defer></script>
+    <link rel="stylesheet" href="css/styles.css?v=<?= filemtime(__DIR__ . '/css/styles.css') ?>">
+    <script src="js/navigation.js?v=<?= filemtime(__DIR__ . '/js/navigation.js') ?>" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
