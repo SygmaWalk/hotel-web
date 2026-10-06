@@ -252,6 +252,7 @@ try {
     check(request('habitaciones-admin.php?id='.$raceRoom,['csrf'=>$adminCsrf,'action'=>'deactivate'],'admin','POST')[0] === 422, 'advertencia HTTP reservas futuras');
     check(request('habitaciones-admin.php?id='.$raceRoom,['csrf'=>$adminCsrf,'action'=>'deactivate','acknowledged'=>'1'],'admin','POST')[0] === 303, 'baja aceptada HTTP');
     require __DIR__ . '/operations-cases.php';
+    require __DIR__ . '/calendar-month-cases.php';
     check(request('logout.php',['csrf'=>$adminCsrf],'admin','POST')[0] === 303 && request('solicitudes.php',[],'admin')[0] === 303, 'logout invalida acceso');
     $lockForm=request('login.php',[],'locked')[1]; $lockCsrf=token($lockForm);
     for($i=0;$i<5;$i++) request('login.php',['csrf'=>$lockCsrf,'email'=>'locked@example.test','password'=>'wrong'],'locked','POST');

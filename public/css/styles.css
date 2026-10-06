@@ -318,3 +318,20 @@ tbody tr:hover { background:#f5f8f5; }
 .room-gallery img { width:100%; height:auto; aspect-ratio:1.5; object-fit:cover; border-radius:4px; }
 .calendar-state.occupied, .calendar-cell.occupied { background:#dcefee; color:#143e3b; }
 .spaced-heading { margin-top:2rem; }
+
+/* Calendario mensual: el texto acompaña a cada color de disponibilidad. */
+.month-grid {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.5rem;margin:1.2rem 0 2rem}
+.month-weekday {font-weight:700;text-align:center}
+.month-day {border:1px solid #cbd5d1;border-radius:.6rem;background:#fff;padding:.65rem;min-width:0}
+.month-day h3 {font-size:.85rem;margin:0 0 .7rem}
+.month-day[aria-current] {outline:2px solid #24695c}
+.month-room {border-top:1px solid #e2e8e5;padding:.5rem 0}
+.month-room .calendar-state {white-space:normal;display:block;font-size:.75rem}
+.month-reservation {display:block;border:0;background:transparent;color:#20594d;text-align:left;text-decoration:underline;font:inherit;font-size:.8rem;padding:.5rem 0;overflow-wrap:anywhere;cursor:pointer}
+.month-unavailable {background:#f1f3f2;color:#666}
+[data-month-calendar] dialog {max-width:32rem;width:calc(100% - 3rem);border:1px solid #aabdb5;border-radius:1rem;padding:1.5rem}
+[data-month-calendar] dialog::backdrop {background:#152b26aa}
+[data-month-calendar] [data-close] {float:right}
+[data-month-calendar] [data-detail] {clear:both;padding-top:1rem}
+@media(max-width:1000px) {.month-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.month-weekday,.month-blank {display:none}}
+@media(max-width:550px) {.month-grid {grid-template-columns:1fr}}

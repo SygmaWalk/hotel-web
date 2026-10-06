@@ -35,6 +35,24 @@ Los números corresponden a la primera carga en la base local vacía; otras inst
 
 ## Verificación
 
-`tests/run.php` contiene 186 verificaciones, incluidas 40 nuevas para el calendario: intervalos, fechas inválidas y arrays HTTP, año bisiesto, límites del rango, salida exclusiva, entradas y salidas simultáneas, reservas que atraviesan el rango, filtro por habitación, inactivas, estados previstos, autenticación, acceso de ambos roles, escape de nombres y ausencia de correos/tokens en la tabla.
+`tests/run.php` contiene 200 verificaciones, incluidas 40 nuevas para el calendario: intervalos, fechas inválidas y arrays HTTP, año bisiesto, límites del rango, salida exclusiva, entradas y salidas simultáneas, reservas que atraviesan el rango, filtro por habitación, inactivas, estados previstos, autenticación, acceso de ambos roles, escape de nombres y ausencia de correos/tokens en la tabla.
 
 Las pruebas utilizan una base efímera independiente. La ampliación de operación agrega stays y room_images mediante scripts/migrate.php, conservando los registros existentes. El código, esquema y scripts se versionan juntos; la base de cada computadora se configura por separado. Ver docs/otra-pc.md.
+
+## Calendario mensual interactivo · HOT-34
+
+Arriba de la consulta por fechas se muestra el mes completo. Anterior, Siguiente, Hoy y el selector de habitación actualizan los datos sin recargar la página. Cada reserva abre un diálogo con nombre, habitación, fechas disponibles y enlace para gestionarla. Escape o Cerrar detalle cierran el diálogo y devuelven el foco al botón.
+
+El mes final se recorta al límite anual; los días posteriores se muestran fuera de plazo. Los estados conservan las reglas de reservas previstas y estadías reales. En pantallas pequeñas los días se organizan en una o dos columnas. La tabla tradicional continúa disponible, incluso sin JavaScript.
+
+### Recorrido para explicar en clase
+
+1. JavaScript envía un GET, por ejemplo calendario-datos.php?month=2026-10&room_id=1.
+2. PHP comprueba la sesión y valida mes y habitación.
+3. Hotel::calendar consulta MySQL mediante PDO y calcula estados.
+4. PHP responde JSON con fechas, habitaciones y reservas, sin correos ni tokens.
+5. fetch recibe la respuesta; JavaScript crea los elementos con textContent, sin interpretar nombres como HTML.
+
+HTTP 200 indica éxito; 401 pide volver a ingresar; 422 indica filtros inválidos; 503 indica un fallo temporal. Un error conserva el último mes visible. Las consultas anteriores se cancelan cuando se solicita otro mes, para que una respuesta tardía no sobrescriba la consulta nueva.
+
+No requiere migración ni dependencias nuevas. Pruebas del sistema: 200, incluyendo 14 casos nuevos en tests/calendar-month-cases.php. La revisión visual no pudo realizarse por un fallo de la herramienta de navegador; se comprobó sintaxis JavaScript y respuestas HTTP.

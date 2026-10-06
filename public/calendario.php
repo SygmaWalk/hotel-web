@@ -23,6 +23,20 @@ $labels = ['free'=>'Libre', 'reserved'=>'Reservada', 'expected'=>'Ocupada previs
 pageStart('Calendario de disponibilidad', $user);
 ?>
 <p class="intro">Consultá las noches de cada habitación hasta el <?= e(bookingLimit()) ?>, un año desde hoy. Podés consultar fechas pasadas.</p>
+<section data-month-calendar data-today="<?= e(date('Y-m-d')) ?>" hidden aria-label="Calendario mensual interactivo">
+<form class="filter-form">
+<div><label for="month">Mes</label><input id="month" name="month" type="month" required min="2000-01" max="<?= e(substr(bookingLimit(),0,7)) ?>" value="<?= e(validDate($from) && $from >= '2000-01-01' && $from <= bookingLimit() ? substr($from,0,7) : date('Y-m')) ?>"></div>
+<div><label for="month-room">Habitación</label><select id="month-room" name="room_id"><option value="">Todas las habitaciones</option><?php foreach (hotel()->rooms(true) as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $roomValue === (string)$item['id'] ? 'selected' : '' ?>><?= e($item['code'].' · '.$item['name'].(!$item['active']?' · Inactiva':'')) ?></option><?php endforeach ?></select></div>
+<button class="button" type="submit">Ver mes</button>
+</form>
+<div class="calendar-pagination"><button type="button" data-shift="-1">← Mes anterior</button><button type="button" data-today>Hoy</button><button type="button" data-shift="1">Mes siguiente →</button></div>
+<p role="status" aria-live="polite"></p>
+<p>Hacé clic en una reserva para ver su detalle. Pendientes y rechazadas no bloquean noches. La salida prevista no ocupa esa noche; una salida anticipada no cancela las noches contratadas.</p>
+<div data-month-content></div>
+<dialog aria-label="Detalle de reserva"><button type="button" data-close autofocus>Cerrar detalle</button><div data-detail></div></dialog>
+</section>
+<script src="<?= e(assetUrl('js/calendar.js')) ?>" defer></script>
+<h2>Consulta por fechas</h2>
 <form method="get" class="filter-form calendar-filter">
     <div><label for="from">Primera noche</label><input id="from" name="from" type="date" required min="2000-01-01" max="<?= e(bookingLimit()) ?>" value="<?= e($from) ?>" <?= isset($errors['from']) ? 'aria-invalid="true"' : '' ?>></div>
     <div><label for="to">Última noche</label><input id="to" name="to" type="date" required min="2000-01-01" max="<?= e(bookingLimit()) ?>" value="<?= e($to) ?>"></div>

@@ -32,7 +32,7 @@ La revisión del backlog y los criterios propuestos están en `docs/estado-y-bac
 
 ## Calendario de disponibilidad
 
-El personal también puede abrir **Calendario** para consultar de 1 a 31 noches por habitación, avanzar o retroceder el rango y abrir el detalle de las reservas. La salida libera la noche; pendientes y rechazadas no bloquean. El calendario distingue ocupación prevista y estadías registradas mediante check-in y check-out. Ver `docs/calendario.md` para reglas, recorrido y pruebas.
+HOT-34 agrega una vista mensual interactiva con navegación, filtros y detalle de reservas mediante GET y JSON, sin dependencias nuevas. La tabla por fechas sigue disponible. El personal también puede abrir **Calendario** para consultar de 1 a 31 noches por habitación, avanzar o retroceder el rango y abrir el detalle de las reservas. La salida libera la noche; pendientes y rechazadas no bloquean. El calendario distingue ocupación prevista y estadías registradas mediante check-in y check-out. Ver `docs/calendario.md` para reglas, recorrido y pruebas.
 
 ## Carpetas y recorrido de una petición
 
