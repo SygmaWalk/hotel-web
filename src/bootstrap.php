@@ -32,7 +32,7 @@ function redirect(string $page): never { header('Location: ' . url($page), true,
 function csrfInput(): void { echo '<input type="hidden" name="csrf" value="' . e($_SESSION['csrf']) . '">'; }
 function fail(int $code, string $message): never { http_response_code($code); pageStart('No se pudo continuar'); echo '<p class="notice error">' . e($message) . '</p>'; pageEnd(); exit; }
 function flash(string $message): void { $_SESSION['flash'] = $message; }
-function statusLabel(string $status): string { return ['pending'=>'Pendiente','confirmed'=>'Confirmada','rejected'=>'Rechazada'][$status] ?? $status; }
+function statusLabel(string $status): string { return ['pending'=>'Pendiente','confirmed'=>'Confirmada','rejected'=>'Rechazada','cancelled'=>'Cancelada'][$status] ?? $status; }
 function currentUser(): ?array {
     if (empty($_SESSION['user_id'])) return null;
     $statement = db()->prepare('SELECT id, email, role FROM users WHERE id = ?');
@@ -53,3 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals($_SESSION['csrf'], fie
     fail(403, 'El formulario venció o no es válido. Volvé a abrir la página.');
 }
 function hotel(): Hotel { static $hotel; return $hotel ??= new Hotel(db()); }
+function reservationEmails(): ReservationEmails {
+    static $emails;
+    return $emails ??= new ReservationEmails(db(), GmailTransport::fromLocalConfig());
+}
+function sendReservationEmails(int $id): void {
+    // La reserva ya está guardada: un fallo de correo no debe convertir el POST en un error de reserva.
+    try { reservationEmails()->sendPending($id); }
+    catch (Throwable $error) { error_log('Hotel: envío de aviso pendiente de revisión.'); }
+}

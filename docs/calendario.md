@@ -2,6 +2,8 @@
 
 Disponible para recepción y administración desde **Calendario** en el menú del personal, en `public/calendario.php`.
 
+Desde el 19/10/2026, **Nueva reserva** permite consultar habitaciones disponibles por intervalo y guardar una reserva confirmada. También se puede abrir desde **+ Reservar** en una noche libre, tanto en la vista mensual como en la tabla. Ver [reservas de recepción](recepcion.md) para reglas y pruebas actuales.
+
 ## Consulta
 
 - Seleccionar primera y última noche, ambas incluidas: entre 1 y 31 noches, desde el año 2000 hasta un año desde hoy.

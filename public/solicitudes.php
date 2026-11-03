@@ -10,7 +10,7 @@ pageStart('Solicitudes de estadía', $user);
 <?php errorSummary($errors) ?>
 <form method="get" class="filter-form">
 <div><label for="status">Estado</label><select id="status" name="status"><option value="">Todos</option>
-<?php foreach (['pending','confirmed','rejected'] as $option): ?><option value="<?= e($option) ?>" <?= $status === $option ? 'selected' : '' ?>><?= e(statusLabel($option)) ?></option><?php endforeach ?></select></div>
+<?php foreach (['pending','confirmed','rejected','cancelled'] as $option): ?><option value="<?= e($option) ?>" <?= $status === $option ? 'selected' : '' ?>><?= e(statusLabel($option)) ?></option><?php endforeach ?></select></div>
 <div><label for="date">Fecha de entrada</label><input type="date" id="date" name="date" value="<?= e($date) ?>"></div><button class="button">Filtrar</button><a href="<?= e(url('solicitudes.php')) ?>">Limpiar filtros</a></form>
 <?php if (!$errors && !$requests): ?><p class="notice">No hay solicitudes para estos filtros.</p><?php endif ?>
 <?php if ($requests): ?><div class="table-wrap"><table><caption><?= count($requests) ?> solicitudes</caption><thead><tr><th>Referencia</th><th>Huésped</th><th>Habitación</th><th>Entrada / salida</th><th>Estado</th><th>Acción</th></tr></thead><tbody>

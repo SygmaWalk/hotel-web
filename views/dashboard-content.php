@@ -3,6 +3,14 @@ $summary = $dashboard['summary'];
 $displayDate = (new DateTimeImmutable($date))->format('d/m/Y');
 ?>
 <div class="dashboard-date"><span class="eyebrow">RESUMEN DE OPERACIONES</span><time datetime="<?= e($date) ?>"><?= e($displayDate) ?></time></div>
+<?php $cleaningPending = array_values(array_filter(hotel()->cleaningRooms(), fn($r) => $r['reservation_id'] !== null)); ?>
+<section class="dashboard-panel" aria-labelledby="cleaning-now-title">
+<div class="panel-heading"><h2 id="cleaning-now-title">Limpieza ahora</h2><a href="<?= e(url('limpieza.php')) ?>">Gestionar limpieza</a></div>
+<p class="panel-description">Estado actual, independiente de la fecha consultada. Las reservas previstas se conservan; las habitaciones pendientes no admiten nuevas llegadas.</p>
+<?php if (!$cleaningPending): ?><p>No hay limpiezas pendientes.</p><?php else: ?>
+<p><strong><?= count($cleaningPending) ?></strong> <?= count($cleaningPending) === 1 ? 'habitación pendiente' : 'habitaciones pendientes' ?></p>
+<ul class="request-list"><?php foreach ($cleaningPending as $item): ?><li><a href="<?= e(url('limpieza.php#cleaning-list')) ?>">Habitación <?= e($item['code']) ?> · <?= e($item['name']) ?></a><span class="calendar-state cleaning">Pendiente de limpieza<?= !$item['active'] ? ' · Inactiva' : '' ?></span></li><?php endforeach ?></ul>
+<?php endif ?></section>
 <section class="dashboard-panel"><h2>Huéspedes alojados ahora</h2>
 <p class="panel-description">Registro actual de llegadas sin salida, independiente de la fecha consultada. Las reservas previstas se mantienen hasta su fecha de salida; una salida anticipada no las cancela.</p>
 <?php $occupants = hotel()->occupants(); ?>
@@ -12,7 +20,7 @@ $displayDate = (new DateTimeImmutable($date))->format('d/m/Y');
     <a class="metric-card" href="#arrivals"><span class="metric-label">Llegadas previstas</span><strong><?= e($summary['arrivals']) ?></strong><span>Reservas que comienzan este día <span aria-hidden="true">↗</span></span></a>
     <a class="metric-card" href="#departures"><span class="metric-label">Salidas previstas</span><strong><?= e($summary['departures']) ?></strong><span>Reservas que finalizan este día <span aria-hidden="true">↗</span></span></a>
     <a class="metric-card metric-pending" href="#pending"><span class="metric-label">Por responder</span><strong><?= e($summary['pending']) ?></strong><span>Solicitudes pendientes · todas las fechas <span aria-hidden="true">↗</span></span></a>
-    <a class="metric-card metric-availability" href="#availability"><span class="metric-label">Libres según reservas</span><strong><?= e($summary['available']) ?><small> / <?= e($summary['active']) ?></small></strong><span>Activas y sin reserva para esa noche <span aria-hidden="true">↗</span></span></a>
+    <a class="metric-card metric-availability" href="#availability"><span class="metric-label">Disponibles para reservar</span><strong><?= e($summary['available']) ?><small> / <?= e($summary['active']) ?></small></strong><span>Activas, sin reserva ni mantenimiento esa noche <span aria-hidden="true">↗</span></span></a>
 </section>
 <div class="dashboard-grid">
 <section class="dashboard-panel" id="pending" aria-labelledby="pending-title">
@@ -50,10 +58,11 @@ $displayDate = (new DateTimeImmutable($date))->format('d/m/Y');
 <?php endforeach ?>
 </div>
 <section class="dashboard-panel" id="availability" aria-labelledby="availability-title">
+    <p><strong><?= e($summary['maintenance']) ?></strong> habitaciones activas en mantenimiento para la noche consultada. <a href="<?= e(url('mantenimiento.php')) ?>">Gestionar mantenimiento</a>.</p>
     <div class="panel-heading"><div><p class="eyebrow">NOCHE DEL <?= e($displayDate) ?></p><h2 id="availability-title">Disponibilidad prevista por habitación</h2></div><span class="occupancy-number"><?= e($summary['percentage']) ?>% <small>reservado</small></span></div>
     <p class="panel-description">La fecha de salida libera la noche. Las solicitudes pendientes no bloquean disponibilidad.</p>
     <?php if (!$dashboard['rooms']): ?><p class="empty-inline">Todavía no hay habitaciones cargadas. Un administrador puede agregarlas al inventario.</p><?php else: ?>
     <ul class="room-status-grid">
-    <?php foreach ($dashboard['rooms'] as $room): ?><li><span class="room-code"><?= e($room['code']) ?></span><div><h3><?= e($room['name']) ?></h3><span class="room-state <?= !$room['active'] ? 'inactive' : ($room['reserved'] ? 'reserved' : 'available') ?>"><?= !$room['active'] ? 'Inactiva' . ($room['reserved'] ? ' · Con reserva' : '') : ($room['reserved'] ? 'Reservada' : 'Libre') ?></span></div></li><?php endforeach ?>
+    <?php foreach ($dashboard['rooms'] as $room): ?><li><span class="room-code"><?= e($room['code']) ?></span><div><h3><?= e($room['name']) ?></h3><span class="room-state <?= !$room['active'] ? 'inactive' : ($room['maintenance'] ? 'maintenance' : ($room['reserved'] ? 'reserved' : 'available')) ?>"><?= !$room['active'] ? 'Inactiva' . ($room['reserved'] ? ' · Con reserva' : '') : ($room['maintenance'] ? 'En mantenimiento' : ($room['reserved'] ? 'Reservada' : 'Libre')) ?></span></div></li><?php endforeach ?>
     </ul><?php endif ?>
 </section>

@@ -5,7 +5,7 @@ function assetUrl(string $path): string {
 }
 function navLink(string $page, string $label): void {
     $current = basename($_SERVER['SCRIPT_NAME']);
-    $active = $current === $page || ($current === 'solicitud.php' && $page === 'solicitudes.php');
+    $active = $current === $page || (in_array($current, ['solicitud.php','reserva-reprogramar.php','reserva-pagos.php'], true) && $page === 'solicitudes.php') || ($current === 'reserva-nueva.php' && $page === 'calendario.php');
     echo '<a href="' . e(url($page)) . '"' . ($active ? ' aria-current="page"' : '') . '>' . e($label) . '</a>';
 }
 function pageStart(string $title, ?array $user = null): void {
@@ -21,7 +21,7 @@ function pageStart(string $title, ?array $user = null): void {
 <a class="brand" href="<?= e(url('index.php')) ?>"><span class="brand-monogram" aria-hidden="true">A</span><span>HOTEL <strong>AURORA</strong></span></a>
 <button class="menu-toggle app-menu-toggle" type="button" aria-controls="navegacion" aria-expanded="false" hidden>Menú</button>
 <nav id="navegacion" class="app-nav" aria-label="Principal">
-<?php if ($user): ?><?php navLink('dashboard.php', 'Panel del día'); navLink('calendario.php', 'Calendario'); navLink('solicitudes.php', 'Solicitudes'); ?>
+<?php if ($user): ?><?php navLink('dashboard.php', 'Panel del día'); navLink('calendario.php', 'Calendario'); navLink('solicitudes.php', 'Solicitudes'); navLink('cobros.php', 'Cobros'); navLink('limpieza.php', 'Limpieza'); navLink('mantenimiento.php', 'Mantenimiento'); ?>
 <?php if ($user['role'] === 'admin'): ?><?php navLink('habitaciones-admin.php', 'Habitaciones'); navLink('usuarios.php', 'Usuarios'); ?><?php endif ?>
 <?php navLink('habitaciones.php', 'Ver catálogo'); ?>
 <form method="post" action="<?= e(url('logout.php')) ?>"><?php csrfInput() ?><button class="text-button">Cerrar sesión</button></form>

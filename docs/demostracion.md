@@ -42,6 +42,18 @@ El recorrido anterior es de consulta y conserva el estado inicial. Si luego se c
 
 `C:\xampp\php\php.exe tests/seed-demo.php` ejecuta 17 comprobaciones en una base temporal: casos iniciales, repetición, conservación de reservas ajenas y decisiones del personal, fechas inválidas, habitación inactiva, colección parcial y reversión completa ante conflictos. No utiliza la base de demostración.
 
-La suite general se ejecuta con `C:\xampp\php\php.exe tests/run.php` y contiene 127 comprobaciones adicionales, incluidas las del calendario.
+La suite general se ejecuta con `C:\xampp\php\php.exe tests/run.php` y al 23/10/2026 contiene 616 comprobaciones, incluidas reservas, calendario, estadías, limpieza, cancelaciones, reprogramaciones, mantenimiento y pagos.
 
 Trabajo relacionado: HOT-11 (panel), HOT-24 (navegación), HOT-29 (testing) y HOT-30 (datos y guion).
+
+## Recorrido adicional de pagos · 23/10/2026
+
+Usar una reserva ficticia confirmada, sin movimientos, con una noche a $65.000. El alta desde Calendario permite crearla en fechas actuales disponibles; no reutilizar las fechas vencidas de la colección histórica para registrar una llegada.
+
+1. Abrir **Gestionar señas y pagos**: comprobar total $65.000 y pendiente $65.000.
+2. Registrar una seña de $20.000 por transferencia: pendiente $45.000 y nueva entrada con empleado y hora.
+3. Mostrar **Cobros**: $20.000 en transferencia, sin devoluciones.
+4. Simular una corrección de carga: anular el registro con motivo «Importe cargado por error» y registrar una seña correcta de $25.000. La primera entrada sigue visible como anulada y el pendiente queda en $40.000.
+5. Explicar que una devolución real utiliza la categoría **Devolución** y que cancelar o reprogramar conserva los pagos. Registrar movimientos solo como ejemplos; no hay transferencia bancaria.
+
+El ejemplo cambia su reserva ficticia; la carga demo no reinicia estos movimientos. La demostración automatizada usa una base temporal y no inserta pagos en la instalación del hotel.

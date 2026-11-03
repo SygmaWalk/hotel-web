@@ -52,4 +52,4 @@ Desactivar hace UPDATE active = 0, sin DELETE. Las solicitudes y reservas siguen
 - 429: demasiados intentos de acceso.
 - 503: fallo inesperado o de conexión, sin mostrar credenciales.
 
-HOT-4 es la validación; HOT-5 agrega la persistencia sobre el mismo formulario. Una validación fallida no guarda nada. El mensaje de recepción aparece solo después de guardar. Todo sigue siendo una demo local, sin correos, pagos ni reservas reales.
+HOT-4 es la validación; HOT-5 agrega la persistencia sobre el mismo formulario. Una validación fallida no guarda nada. El mensaje de recepción aparece solo después de guardar. La versión actual también guarda el aviso de correo en la misma transacción y lo envía después del commit si Gmail está activo. Señas, pagos y devoluciones son registros manuales; no se ejecutan cobros bancarios.

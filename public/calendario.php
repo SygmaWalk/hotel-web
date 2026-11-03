@@ -19,10 +19,12 @@ try {
 if ($errors) { http_response_code(422); $allRooms = hotel()->rooms(true); }
 $formatDate = fn(string $date): string => (new DateTimeImmutable($date))->format('d/m/Y');
 $calendarUrl = fn(string $start, string $end): string => url('calendario.php?' . http_build_query(['from'=>$start, 'to'=>$end, 'room_id'=>$roomValue]));
-$labels = ['free'=>'Libre', 'reserved'=>'Reservada', 'expected'=>'Ocupada prevista', 'inactive'=>'Inactiva', 'occupied'=>'Estadía registrada'];
+$labels = ['free'=>'Libre', 'reserved'=>'Reservada', 'expected'=>'Ocupada prevista', 'inactive'=>'Inactiva', 'occupied'=>'Estadía registrada', 'maintenance'=>'En mantenimiento'];
 pageStart('Calendario de disponibilidad', $user);
 ?>
 <p class="intro">Consultá las noches de cada habitación hasta el <?= e(bookingLimit()) ?>, un año desde hoy. Podés consultar fechas pasadas.</p>
+<p><a class="button" href="<?= e(url('reserva-nueva.php')) ?>">Nueva reserva</a> <span class="data-note">Elegí fechas y consultá habitaciones disponibles.</span></p>
+<p><a href="<?= e(url('mantenimiento.php')) ?>">Gestionar mantenimiento</a> · Los bloqueos impiden reservar durante las noches indicadas.</p>
 <section data-month-calendar data-today="<?= e(date('Y-m-d')) ?>" hidden aria-label="Calendario mensual interactivo">
 <form class="filter-form">
 <div><label for="month">Mes</label><input id="month" name="month" type="month" required min="2000-01" max="<?= e(substr(bookingLimit(),0,7)) ?>" value="<?= e(validDate($from) && $from >= '2000-01-01' && $from <= bookingLimit() ? substr($from,0,7) : date('Y-m')) ?>"></div>
@@ -31,7 +33,7 @@ pageStart('Calendario de disponibilidad', $user);
 </form>
 <div class="calendar-pagination"><button type="button" data-shift="-1">← Mes anterior</button><button type="button" data-today>Hoy</button><button type="button" data-shift="1">Mes siguiente →</button></div>
 <p role="status" aria-live="polite"></p>
-<p>Hacé clic en una reserva para ver su detalle. Pendientes y rechazadas no bloquean noches. La salida prevista no ocupa esa noche; una salida anticipada no cancela las noches contratadas.</p>
+<p>Hacé clic en una reserva para ver su detalle o en «Reservar» para cargar una nueva desde una noche libre. Pendientes y rechazadas no bloquean noches. La salida prevista no ocupa esa noche; una salida anticipada no cancela las noches contratadas.</p>
 <div data-month-content></div>
 <dialog aria-label="Detalle de reserva"><button type="button" data-close autofocus>Cerrar detalle</button><div data-detail></div></dialog>
 </section>
@@ -74,10 +76,13 @@ pageStart('Calendario de disponibilidad', $user);
                 <caption>Noches del <?= e($formatDate($from)) ?> al <?= e($formatDate($to)) ?>. Las entradas y salidas son previstas.</caption>
                 <thead><tr><th scope="col">Habitación</th><?php foreach ($calendar['days'] as $day): ?><th scope="col" <?= $day === $calendar['today'] ? 'aria-current="date"' : '' ?>><time datetime="<?= e($day) ?>"><?= e((new DateTimeImmutable($day))->format('d/m')) ?></time><span class="calendar-weekday"><?= ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][(int) (new DateTimeImmutable($day))->format('w')] ?><?= $day === $calendar['today'] ? ' · Hoy' : '' ?></span></th><?php endforeach ?></tr></thead>
                 <tbody><?php foreach ($calendar['rooms'] as $room): ?><tr>
-                    <th scope="row"><strong><?= e($room['code']) ?></strong><span class="calendar-room-name"><?= e($room['name']) ?></span><?php if (!$room['active']): ?><span class="calendar-inactive-note">Inactiva · no disponible</span><?php endif ?></th>
+                    <th scope="row"><strong><?= e($room['code']) ?></strong><span class="calendar-room-name"><?= e($room['name']) ?></span><?php if (!$room['active']): ?><span class="calendar-inactive-note">Inactiva · no disponible</span><?php endif ?>
+                    <a class="calendar-movement <?= $room['cleaning_pending'] ? 'cleaning-note' : '' ?>" href="<?= e(url('limpieza.php')) ?>"><?= $room['cleaning_pending'] ? 'Ahora: pendiente de limpieza' : 'Ahora: sin limpieza pendiente' ?></a></th>
                     <?php foreach ($calendar['days'] as $day): $cell = $calendar['cells'][$room['id']][$day]; ?>
                     <td class="calendar-cell <?= e($cell['state']) ?>">
                         <span class="calendar-state <?= e($cell['state']) ?>"><?= e($labels[$cell['state']]) ?></span>
+                        <?php foreach ($cell['maintenance'] as $block): ?><a class="calendar-movement" href="<?= e(url('mantenimiento.php?block_id='.$block['id'].'#block-'.$block['id'])) ?>">Mantenimiento #<?= e($block['id']) ?></a><?php endforeach ?>
+                        <?php if ($cell['state'] === 'free' && $day >= date('Y-m-d') && $day < bookingLimit()): ?><a class="calendar-create" aria-label="<?= e('Reservar habitación ' . $room['code'] . ' desde el ' . $formatDate($day)) ?>" href="<?= e(url('reserva-nueva.php?' . http_build_query(['check_in'=>$day, 'room_id'=>$room['id']]))) ?>">+ Reservar</a><?php endif ?>
                         <?php foreach ($cell['actuals'] as $actual): ?><a class="calendar-movement" href="<?= e(url('solicitud.php?id=' . $actual['id'])) ?>">Registro real #<?= (int) $actual['id'] ?> · Entrada <?= e($actual['checked_in_at']) ?><?= $actual['checked_out_at'] ? ' · Salida ' . e($actual['checked_out_at']) : ' · Sin salida registrada' ?></a><?php endforeach ?>
                         <?php foreach ($cell['stays'] as $stay): ?><a class="calendar-stay" href="<?= e(url('solicitud.php?id=' . $stay['id'])) ?>"><strong>#<?= (int) $stay['id'] ?></strong> <?= e($stay['guest_name']) ?></a><?php endforeach ?>
                         <?php foreach (['departures'=>'Salida', 'arrivals'=>'Entrada'] as $movement => $label): foreach ($cell[$movement] as $reservation): ?><a class="calendar-movement" href="<?= e(url('solicitud.php?id=' . $reservation['id'])) ?>"><?= e($label) ?> #<?= (int) $reservation['id'] ?></a><?php endforeach; endforeach ?>

@@ -19,7 +19,7 @@ try {
     $to = min(bookingLimit(), (new DateTimeImmutable($from))->format('Y-m-t'));
     $data = hotel()->calendar($from, $to, $room === '' ? null : (int) $room);
     // Solo los campos necesarios para dibujar el calendario; nunca correos o tokens.
-    foreach (['rooms', 'allRooms'] as $key) $data[$key] = array_map(fn($r) => array_intersect_key($r, array_flip(['id','code','name','active'])), $data[$key]);
+    foreach (['rooms', 'allRooms'] as $key) $data[$key] = array_map(fn($r) => array_intersect_key($r, array_flip(['id','code','name','active','cleaning_pending'])), $data[$key]);
     $data['limit'] = bookingLimit();
     calendarReply(200, $data);
 } catch (DomainException $error) {

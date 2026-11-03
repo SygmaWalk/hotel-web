@@ -1,5 +1,13 @@
 # Estado y próximos pasos
 
+## Estado local actualizado · 23/10/2026
+
+El alcance funcional elegido se cierra con señas, pagos, devoluciones y saldos. Están implementados localmente reservas desde recepción, llegadas/salidas, limpieza, mantenimiento por fechas, cancelaciones y reprogramaciones, además del catálogo, calendario y administración. El paso siguiente es consolidar la documentación académica y la demostración. Ver [índice](README.md), [pagos](pagos.md) y [pruebas actuales](pruebas-cierre.md).
+
+Las alertas automáticas quedan fuera del alcance elegido. Las secciones siguientes son una bitácora histórica: sus referencias a tareas pendientes y a Jira describen cada revisión original. No se consultó ni modificó Jira en esta actualización. La suite actual pasó 616 comprobaciones más 17 de datos demo.
+
+## Bitácora anterior
+
 Revisión del 5 de octubre de 2026. Fuentes: código local, proyecto HOT de Jira y consigna Trabajo Práctico Integrador DSW. La temática está aprobada. Entrega integrada: 16/10; pruebas: 19–30/10; entrega final: 16/11/2026.
 
 ## Historias existentes

@@ -2,10 +2,17 @@
 declare(strict_types=1);
 require_once __DIR__ . '/Validation.php';
 require_once __DIR__ . '/Operations.php';
+require_once __DIR__ . '/Rescheduling.php';
+require_once __DIR__ . '/Maintenance.php';
+require_once __DIR__ . '/Payments.php';
+require_once __DIR__ . '/ReservationEmails.php';
 
 final class Hotel
 {
     use HotelOperations;
+    use HotelRescheduling;
+    use HotelMaintenance;
+    use HotelPayments;
     public function __construct(private PDO $pdo) {}
 
     private function query(string $sql, array $params = []): PDOStatement
@@ -18,7 +25,9 @@ final class Hotel
 
     public function rooms(bool $includeInactive = false): array
     {
-        return $this->query('SELECT * FROM rooms' . ($includeInactive ? '' : ' WHERE active = 1') . ' ORDER BY code')->fetchAll();
+        return $this->query('SELECT h.*, EXISTS(SELECT 1 FROM room_cleanings c JOIN reservations r ON r.id = c.reservation_id
+            WHERE r.room_id = h.id AND c.completed_at IS NULL) AS cleaning_pending FROM rooms h' .
+            ($includeInactive ? '' : ' WHERE h.active = 1') . ' ORDER BY h.code')->fetchAll();
     }
 
     public function room(int $id): ?array
@@ -38,12 +47,16 @@ final class Hotel
             FROM reservations", [$date, $date])->fetch();
         $rooms = $this->query("SELECT h.id, h.code, h.name, h.active,
             EXISTS(SELECT 1 FROM reservations r WHERE r.room_id = h.id
-                AND r.status = 'confirmed' AND r.check_in <= ? AND r.check_out > ?) AS reserved
-            FROM rooms h ORDER BY h.code", [$date, $date])->fetchAll();
+                AND r.status = 'confirmed' AND r.check_in <= ? AND r.check_out > ?) AS reserved,
+            EXISTS(SELECT 1 FROM room_maintenance m WHERE m.room_id = h.id AND m.start_date <= ?
+                AND LEAST(m.end_date, COALESCE(DATE(m.released_at), m.end_date)) > ?) AS maintenance
+            FROM rooms h ORDER BY h.code", [$date, $date, $date, $date])->fetchAll();
         $active = count(array_filter($rooms, fn(array $room): bool => (bool) $room['active']));
         $reserved = count(array_filter($rooms, fn(array $room): bool => $room['active'] && $room['reserved']));
         $summary = array_map('intval', $summary);
-        $summary += ['active' => $active, 'reserved' => $reserved, 'available' => $active - $reserved,
+        $maintenance = count(array_filter($rooms, fn(array $room): bool => $room['active'] && $room['maintenance']));
+        $available = count(array_filter($rooms, fn(array $room): bool => $room['active'] && !$room['reserved'] && !$room['maintenance']));
+        $summary += ['active' => $active, 'reserved' => $reserved, 'available' => $available, 'maintenance' => $maintenance,
             'inactive' => count($rooms) - $active, 'percentage' => $active ? (int) round(100 * $reserved / $active) : 0];
         // Las llegadas y salidas incluyen habitaciones desactivadas: requieren atención igualmente.
         $select = 'SELECT r.id, r.guest_name, r.check_in, r.check_out, h.code, h.active FROM reservations r JOIN rooms h ON h.id = r.room_id';
@@ -87,7 +100,14 @@ final class Hotel
         $cells = [];
         foreach ($rooms as $room) {
             foreach ($days as $day) {
-                $cells[$room['id']][$day] = ['state' => $room['active'] ? 'free' : 'inactive', 'stays' => [], 'arrivals' => [], 'departures' => [], 'actuals' => []];
+                $cells[$room['id']][$day] = ['state' => $room['active'] ? 'free' : 'inactive', 'stays' => [], 'arrivals' => [], 'departures' => [], 'actuals' => [], 'maintenance' => []];
+            }
+            $until = (new DateTimeImmutable($to))->modify('+1 day')->format('Y-m-d');
+            foreach ($this->maintenanceDuring((int) $room['id'], $from, $until) as $block) {
+                foreach ($days as $day) if ($block['start_date'] <= $day && $block['effective_end'] > $day) {
+                    $cells[$room['id']][$day]['state'] = 'maintenance';
+                    $cells[$room['id']][$day]['maintenance'][] = ['id'=>(int) $block['id']];
+                }
             }
         }
         foreach ($reservations as $reservation) {
@@ -117,6 +137,87 @@ final class Hotel
         return compact('from', 'to', 'today', 'days', 'rooms', 'allRooms', 'cells');
     }
 
+    public function availableRooms(string $checkIn, string $checkOut, int $excludeReservation = 0): array
+    {
+        $errors = validateBookingDates($checkIn, $checkOut);
+        if ($errors) throw new DomainException(implode(' ', $errors));
+        return $this->query("SELECT h.* FROM rooms h WHERE h.active = 1
+            AND NOT EXISTS (SELECT 1 FROM reservations r WHERE r.room_id = h.id
+                AND r.status = 'confirmed' AND r.check_in < ? AND r.check_out > ? AND r.id <> ?)
+            AND NOT EXISTS (SELECT 1 FROM room_maintenance m WHERE m.room_id = h.id AND m.start_date < ?
+                AND LEAST(m.end_date, COALESCE(DATE(m.released_at), m.end_date)) > ?
+                AND m.start_date < LEAST(m.end_date, COALESCE(DATE(m.released_at), m.end_date)))
+            AND (? <> ? OR NOT EXISTS (SELECT 1 FROM stays s JOIN reservations r ON r.id = s.reservation_id
+                WHERE r.room_id = h.id AND s.checked_out_at IS NULL)) ORDER BY h.code",
+            [$checkOut, $checkIn, $excludeReservation, $checkOut, $checkIn, $checkIn, date('Y-m-d')])->fetchAll();
+    }
+
+    // Se usa dentro de una transacción, después de bloquear la habitación.
+    private function assertBookable(?array $room, array $data, int $excludeReservation = 0): void
+    {
+        if (!$room || !$room['active']) throw new DomainException('La habitación no está disponible. Elegí otra.');
+        $errors = validateBookingDates($data['check_in'], $data['check_out']);
+        if ($errors) throw new DomainException(implode(' ', $errors));
+        // Intervalos [entrada, salida): salir y entrar el mismo día no se solapan.
+        $this->assertNoMaintenance((int) $room['id'], $data['check_in'], $data['check_out']);
+        $overlap = $this->query("SELECT id FROM reservations WHERE room_id = ? AND status = 'confirmed'
+            AND check_in < ? AND check_out > ? AND id <> ? LIMIT 1 FOR UPDATE",
+            [$room['id'], $data['check_out'], $data['check_in'], $excludeReservation])->fetchColumn();
+        if ($overlap) throw new DomainException('La habitación ya está ocupada en esas fechas. Consultá disponibilidad nuevamente.');
+        if ($data['check_in'] === date('Y-m-d')) {
+            $occupied = $this->query('SELECT s.reservation_id FROM stays s JOIN reservations r ON r.id = s.reservation_id
+                WHERE r.room_id = ? AND s.checked_out_at IS NULL LIMIT 1 FOR UPDATE', [$room['id']])->fetchColumn();
+            if ($occupied) throw new DomainException('La habitación tiene un huésped sin salida registrada. Registrá primero su salida.');
+        }
+    }
+
+    private function repeatedStaffReservation(array $existing, array $data, int $actor): int
+    {
+        foreach (['room_id', 'guest_name', 'email', 'check_in', 'check_out'] as $field) {
+            if ((string) $existing[$field] !== (string) $data[$field]) {
+                throw new DomainException('Este formulario ya se usó con otros datos. Abrí Nueva reserva para crear otra.');
+            }
+        }
+        if ($existing['status'] !== 'confirmed' || (int) $existing['resolved_by'] !== $actor) {
+            throw new DomainException('Este formulario ya fue utilizado. Abrí Nueva reserva.');
+        }
+        return (int) $existing['id'];
+    }
+
+    public function createReservation(array $input, string $token, int $actor): int
+    {
+        $this->actor($actor);
+        [$data, $errors] = validateRequest($input);
+        if ($errors || !preg_match('/^[a-f0-9]{64}$/D', $token)) throw new DomainException('Revisá los datos de la reserva.');
+        $this->pdo->beginTransaction();
+        try {
+            // Mismo bloqueo que resolve: crear y confirmar compiten por la misma habitación.
+            $room = $this->query('SELECT * FROM rooms WHERE id = ? FOR UPDATE', [$data['room_id']])->fetch();
+            $existing = $this->query('SELECT * FROM reservations WHERE submission_token = ? FOR UPDATE', [$token])->fetch();
+            if ($existing) {
+                $id = $this->repeatedStaffReservation($existing, $data, $actor);
+                $this->pdo->commit();
+                return $id;
+            }
+            $this->assertBookable($room ?: null, $data);
+            $this->query("INSERT INTO reservations
+                (room_id, guest_name, email, check_in, check_out, nightly_rate, submission_token, status, resolved_by, resolved_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, NOW())",
+                [$data['room_id'], $data['guest_name'], $data['email'], $data['check_in'], $data['check_out'], $room['nightly_rate'], $token, $actor]);
+            $id = (int) $this->pdo->lastInsertId();
+            ReservationEmails::queue($this->pdo, $id, 'confirmed');
+            $this->pdo->commit();
+            return $id;
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            if ($error instanceof PDOException && ($error->errorInfo[1] ?? 0) === 1062) {
+                $existing = $this->query('SELECT * FROM reservations WHERE submission_token = ?', [$token])->fetch();
+                if ($existing) return $this->repeatedStaffReservation($existing, $data, $actor);
+            }
+            throw $error;
+        }
+    }
+
     public function submit(array $input, string $token): int
     {
         [$data, $errors] = validateRequest($input);
@@ -135,10 +236,12 @@ final class Hotel
             if (!$room || !$room['active']) {
                 throw new DomainException('Esta habitación ya no está disponible para solicitudes. Elegí otra.');
             }
+            $this->assertNoMaintenance((int) $room['id'], $data['check_in'], $data['check_out']);
             $this->query('INSERT INTO reservations (room_id, guest_name, email, check_in, check_out, nightly_rate, submission_token) VALUES (?, ?, ?, ?, ?, ?, ?)', [
                 $data['room_id'], $data['guest_name'], $data['email'], $data['check_in'], $data['check_out'], $room['nightly_rate'], $token,
             ]);
             $id = (int) $this->pdo->lastInsertId();
+            ReservationEmails::queue($this->pdo, $id, 'received');
             $this->pdo->commit();
             return $id;
         } catch (Throwable $error) {
@@ -154,7 +257,7 @@ final class Hotel
 
     public function requests(string $status = '', string $date = ''): array
     {
-        if ($status !== '' && !in_array($status, ['pending', 'confirmed', 'rejected'], true)) {
+        if ($status !== '' && !in_array($status, ['pending', 'confirmed', 'rejected', 'cancelled'], true)) {
             throw new DomainException('Elegí un estado válido.');
         }
         if ($date !== '' && !validDate($date)) throw new DomainException('Ingresá una fecha válida.');
@@ -167,7 +270,42 @@ final class Hotel
 
     public function request(int $id): ?array
     {
-        return $this->query('SELECT r.*, h.code, h.name AS room_name, h.active FROM reservations r JOIN rooms h ON h.id = r.room_id WHERE r.id = ?', [$id])->fetch() ?: null;
+        return $this->query('SELECT r.*, h.code, h.name AS room_name, h.active, u.email AS resolved_actor,
+            c.reason AS cancellation_reason, c.cancelled_at, a.email AS cancelled_actor
+            FROM reservations r JOIN rooms h ON h.id = r.room_id LEFT JOIN users u ON u.id = r.resolved_by
+            LEFT JOIN reservation_cancellations c ON c.reservation_id = r.id
+            LEFT JOIN users a ON a.id = c.cancelled_by WHERE r.id = ?', [$id])->fetch() ?: null;
+    }
+
+    public function cancelReservation(int $id, string $reason, bool $acknowledged, int $actor): void
+    {
+        $this->actor($actor);
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) throw new DomainException('Ingresá un motivo de entre 1 y 500 caracteres.');
+        if (!$acknowledged) throw new DomainException('Confirmá que querés cancelar esta reserva y liberar sus fechas.');
+        $initial = $this->request($id);
+        if (!$initial) throw new DomainException('La reserva no existe.');
+        $this->pdo->beginTransaction();
+        try {
+            // Mismo orden que la llegada y las confirmaciones: habitación, reserva, estadía.
+            $this->query('SELECT id FROM rooms WHERE id = ? FOR UPDATE', [$initial['room_id']]);
+            $reservation = $this->query('SELECT * FROM reservations WHERE id = ? FOR UPDATE', [$id])->fetch();
+            if ($reservation && (int) $reservation['room_id'] !== (int) $initial['room_id']) {
+                throw new DomainException('La reserva cambió de habitación. Actualizá el detalle antes de continuar.');
+            }
+            if (!$reservation || $reservation['status'] !== 'confirmed') {
+                throw new DomainException('Solo se pueden cancelar reservas confirmadas. Revisá el estado actual.');
+            }
+            $stay = $this->query('SELECT reservation_id FROM stays WHERE reservation_id = ? FOR UPDATE', [$id])->fetchColumn();
+            if ($stay) throw new DomainException('La reserva ya tiene una llegada registrada y no se puede cancelar.');
+            $this->query('INSERT INTO reservation_cancellations (reservation_id, reason, cancelled_at, cancelled_by) VALUES (?, ?, ?, ?)',
+                [$id, $reason, date('Y-m-d H:i:s'), $actor]);
+            $this->query("UPDATE reservations SET status = 'cancelled' WHERE id = ?", [$id]);
+            $this->pdo->commit();
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
     }
 
     public function resolve(int $id, string $action, int $staffId): void
@@ -183,14 +321,10 @@ final class Hotel
             $request = $this->query('SELECT * FROM reservations WHERE id = ? FOR UPDATE', [$id])->fetch();
             if ($request['status'] !== 'pending') throw new DomainException('La solicitud ya fue resuelta.');
             if ($action === 'confirmed') {
-                if (!$room['active']) throw new DomainException('La habitación está inactiva.');
-                if ($request['check_in'] < date('Y-m-d')) throw new DomainException('La fecha de entrada ya pasó.');
-                if ($request['check_out'] > bookingLimit()) throw new DomainException('La estadía debe finalizar dentro del próximo año.');
-                // Intervalos [entrada, salida): salir y entrar el mismo día NO se solapan.
-                $overlap = $this->query("SELECT id FROM reservations WHERE room_id = ? AND status = 'confirmed' AND check_in < ? AND check_out > ? LIMIT 1 FOR UPDATE", [$room['id'], $request['check_out'], $request['check_in']])->fetchColumn();
-                if ($overlap) throw new DomainException('La habitación ya está ocupada en esas fechas.');
+                $this->assertBookable($room ?: null, $request);
             }
             $this->query('UPDATE reservations SET status = ?, resolved_by = ?, resolved_at = NOW() WHERE id = ?', [$action, $staffId, $id]);
+            if ($action === 'confirmed') ReservationEmails::queue($this->pdo, $id, 'confirmed');
             $this->pdo->commit();
         } catch (Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();

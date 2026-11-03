@@ -41,16 +41,23 @@ function validateRequest(array $input): array
     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL) || strlen($data['email']) > 190) {
         $errors['email'] = 'Ingresá un correo válido de hasta 190 caracteres.';
     }
-    if (!validDate($data['check_in']) || $data['check_in'] < date('Y-m-d') || $data['check_in'] >= bookingLimit()) {
-        $errors['check_in'] = 'La entrada debe ser desde hoy y anterior al ' . bookingLimit() . ', para permitir al menos una noche.';
-    }
-    if (!validDate($data['check_out']) || $data['check_out'] <= $data['check_in'] || $data['check_out'] > bookingLimit()) {
-        $errors['check_out'] = 'La salida debe ser posterior a la entrada y no superar el ' . bookingLimit() . '.';
-    }
+    $errors += validateBookingDates($data['check_in'], $data['check_out']);
     if (!positiveId($data['room_id'])) {
         $errors['room_id'] = 'Seleccioná una habitación válida.';
     }
     return [$data, $errors];
+}
+
+function validateBookingDates(string $checkIn, string $checkOut): array
+{
+    $errors = [];
+    if (!validDate($checkIn) || $checkIn < date('Y-m-d') || $checkIn >= bookingLimit()) {
+        $errors['check_in'] = 'La entrada debe ser desde hoy y anterior al ' . bookingLimit() . ', para permitir al menos una noche.';
+    }
+    if (!validDate($checkOut) || $checkOut <= $checkIn || $checkOut > bookingLimit()) {
+        $errors['check_out'] = 'La salida debe ser posterior a la entrada y no superar el ' . bookingLimit() . '.';
+    }
+    return $errors;
 }
 
 function validateRoom(array $input): array

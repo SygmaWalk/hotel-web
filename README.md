@@ -2,6 +2,46 @@
 
 Proyecto académico con necesidades y datos ficticios, pensado para aprender backend con PHP.
 
+## Correos de reserva · 02/11/2026
+
+Una solicitud pública genera un acuse de recepción; aprobarla o crear una reserva directa genera una confirmación. El envío por Gmail es opcional y ocurre después de guardar la operación. Recepción ve el resultado y puede reintentar desde el detalle. [Configuración y pruebas de correo](docs/correos.md). En la última verificación local pasaron 653 comprobaciones de reglas, HTTP y concurrencia, y 17 de la carga demo. El transporte de prueba no envía mensajes reales.
+
+## Señas, pagos y cierre del alcance funcional · 23/10/2026
+
+Recepción y administración pueden registrar señas, pagos y devoluciones manuales por reserva, consultar el saldo y corregir registros con motivo y auditoría. El resumen diario distingue cobros, devoluciones y neto por medio. Cancelaciones y reprogramaciones conservan los movimientos y muestran los importes a favor. La salida avisa si queda saldo pendiente, sin impedir registrar la salida real.
+
+Validación: 616 comprobaciones del sistema y 17 de datos demo. No hay pasarela de pagos ni facturación fiscal. Ejecutar `php scripts/migrate.php` antes de usar el código actualizado. Guía: [Pagos](docs/pagos.md). La siguiente etapa es la documentación de entrega: [índice y pendientes documentales](docs/README.md), [registro de pruebas](docs/pruebas-cierre.md).
+
+## Bloqueos por mantenimiento · 23/10/2026
+
+Recepción y administración pueden bloquear habitaciones por fechas con un motivo, revisar conflictos antes de guardar y levantar el bloqueo anticipadamente. Calendario y panel reflejan las noches bloqueadas; las solicitudes, reservas y llegadas comprueban mantenimiento. Se conservan responsable, fechas e historial, sin modificar reservas ni completar limpiezas automáticamente.
+
+Validación: 521 comprobaciones del sistema y 17 de datos demo, incluidas operaciones simultáneas. Recorrido visual de conflictos, guardado y acceso desde el calendario en una base temporal. Actualizar una instalación existente con `php scripts/migrate.php` antes de usar el código nuevo. Guía: [docs/mantenimiento.md](docs/mantenimiento.md).
+
+## Reprogramación de reservas · 21/10/2026
+
+Recepción y administración pueden cambiar fechas o habitación de una reserva confirmada sin ingreso registrado. El flujo consulta disponibilidad, compara importes y pide confirmación antes de guardar. Conserva la tarifa acordada si se mantiene la habitación; al cambiarla usa la tarifa vigente de destino. El historial muestra antes, después, motivo, empleado y hora.
+
+Validación: 445 comprobaciones del sistema y 17 de datos demo, más revisión visual de consulta, diferencia de importe, guardado e historial. Actualizar una instalación existente con `php scripts/migrate.php` antes de usar el código nuevo. Guía: [docs/reprogramaciones.md](docs/reprogramaciones.md).
+
+## Cancelación de reservas · 21/10/2026
+
+HOT-25 permite a recepción y administración cancelar reservas confirmadas sin llegada registrada, con motivo obligatorio y confirmación explícita. Libera las fechas, conserva los datos originales y registra responsable y hora. El filtro **Cancelada** permite consultar el historial. Incluye protección frente a doble envío y llegada simultánea.
+
+Validación: 364 comprobaciones del sistema y 17 de datos demo, más recorrido en navegador de escritorio con una base temporal. Actualizar las instalaciones existentes con `php scripts/migrate.php` antes de usar el código nuevo. Ver [docs/cancelaciones.md](docs/cancelaciones.md).
+
+## Limpieza de habitaciones · instalada localmente el 19/10/2026
+
+La primera etapa de HOT-13 incorpora limpieza pendiente después del check-out, la pantalla **Limpieza**, registro de empleado y hora al marcar una habitación como lista y bloqueo de nuevas llegadas hasta completar la limpieza. Se mantienen las reservas futuras. Panel y calendario muestran el estado actual por separado de la disponibilidad prevista.
+
+Instalada en XAMPP con la migración de `room_cleanings`, conservando los datos existentes. Pasaron 307 comprobaciones del sistema y 17 de datos demo. Se verificó el recorrido en navegador de escritorio y el acceso de recepción en Apache real. La comprobación móvil quedó pendiente por un fallo de la herramienta de navegador. Ver [docs/limpieza.md](docs/limpieza.md).
+
+## Reservas desde recepción · 19/10/2026
+
+Desde **Calendario → Nueva reserva**, o **+ Reservar** en una noche libre, recepción y administración pueden consultar disponibilidad por intervalo y registrar una reserva confirmada. El servidor evita solapamientos, registra al empleado y vuelve al calendario. No requiere migración. Guía y recorrido de backend: [docs/recepcion.md](docs/recepcion.md).
+
+Validación de esa ampliación: 261 comprobaciones del sistema y 17 de datos demo, más revisión del flujo en navegador de escritorio con una base temporal. La ampliación de limpieza eleva el total del sistema a 307. Cambios disponibles localmente.
+
 ## Usar la instalación local
 
 1. Iniciar Apache y MySQL en XAMPP.
@@ -9,7 +49,7 @@ Proyecto académico con necesidades y datos ficticios, pensado para aprender bac
 3. Editar el código en `C:\xampp\htdocs\hotel-web`.
 4. Acceder al personal desde el menú. Las cuentas locales de administrador y recepción están en `config/access.local.txt`. Este archivo y `config/local.php` están excluidos de Git y bloqueados por HTTP.
 
-La base se llama `hotel_aurora`. Contiene tres habitaciones ficticias. Una solicitud pendiente no ocupa una habitación hasta que el personal la confirma. Este proyecto no envía correos ni procesa pagos.
+La base se llama `hotel_aurora`. Contiene tres habitaciones ficticias. Una solicitud pendiente no ocupa una habitación hasta que el personal la confirma. El proyecto puede enviar avisos por Gmail cuando se activa la configuración local; no procesa cobros bancarios.
 
 ## Estado al 5 de octubre de 2026
 

@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         try {
             $id = hotel()->submit($data, $token);
+            sendReservationEmails($id);
             // PRG: tras el INSERT, redirigir a GET evita reenviar POST al actualizar.
             $_SESSION['receipt'] = $id;
             redirect('solicitud-enviada.php');
@@ -26,6 +27,7 @@ pageStart('Solicitá tu estadía');
 ?>
 <p class="intro">Enviar una solicitud no confirma una reserva. El personal revisará las fechas y la habitación elegida. Demo: usá datos ficticios.</p>
 <p class="data-note">Entrada y salida deben quedar dentro del próximo año: hasta <?= e(bookingLimit()) ?>.</p>
+<p class="data-note"><?= reservationEmails()->enabled() ? 'Te enviaremos un aviso de recepción al correo indicado. La confirmación llegará cuando el personal apruebe tu reserva. Usá una dirección propia para esta demostración.' : 'Los avisos por correo todavía no están activados en esta instalación. Conservá la referencia que aparece al enviar.' ?></p>
 <?php errorSummary($errors) ?>
 <?php if (!$rooms): ?><p class="notice">No hay habitaciones activas. Intentá nuevamente más adelante.</p><?php else: ?>
 <form class="form-panel" method="post" data-reservation-form>

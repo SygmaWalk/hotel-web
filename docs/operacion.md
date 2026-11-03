@@ -10,7 +10,7 @@ Con MySQL iniciado, ejecutar desde la carpeta del proyecto:
 C:\xampp\php\php.exe scripts/migrate.php
 ```
 
-La migración agrega stays y room_images, sin modificar ni borrar reservas, habitaciones o usuarios. Puede repetirse. Requiere una cuenta de base de datos con permiso CREATE: toma HOTEL_SETUP_DSN, HOTEL_SETUP_USER y HOTEL_SETUP_PASSWORD o el root local de XAMPP. La aplicación continúa usando su cuenta restringida. Una instalación nueva mediante setup.php ya incluye las tablas.
+La migración actual agrega las tablas de estadías, imágenes, limpieza, cancelaciones, reprogramaciones, mantenimiento y pagos, sin modificar ni borrar registros existentes. Puede repetirse. Requiere una cuenta de base de datos con permiso CREATE: toma HOTEL_SETUP_DSN, HOTEL_SETUP_USER y HOTEL_SETUP_PASSWORD o el root local de XAMPP. La aplicación continúa usando su cuenta restringida. Una instalación nueva mediante setup.php ya incluye las tablas.
 
 ## Llegadas y salidas
 
@@ -22,7 +22,8 @@ Abrir una reserva confirmada en Solicitudes. Recepción y administración pueden
 - Check-out requiere una llegada y no puede repetirse. Admite salida anticipada o tardía con la hora real.
 - La tabla stays conserva fechas y empleados de ambos movimientos, vinculados por claves foráneas.
 - No se infiere un no-show ni se registran movimientos automáticamente. Una confirmada sin llegada sigue siendo prevista.
-- Registrar una salida no cancela ni cambia el intervalo contratado. La cancelación/liberación anticipada se trata por separado (HOT-25); la limpieza sigue pendiente (HOT-13).
+- Registrar una salida no cancela ni cambia el intervalo contratado. Genera una limpieza pendiente y bloquea nuevas llegadas hasta marcarla lista. La cancelación solo se permite antes de registrar la llegada. Ver [limpieza](limpieza.md) y [cancelaciones](cancelaciones.md).
+- Antes de registrar la salida se muestra el saldo pendiente. La salida real puede registrarse aunque quede deuda; los pagos posteriores siguen disponibles en [Pagos](pagos.md).
 
 El panel distingue huéspedes alojados ahora de indicadores por fechas previstas. El calendario muestra registros reales hasta hoy; las noches futuras siguen basadas en reservas. Una habitación inactiva puede conservar historial.
 

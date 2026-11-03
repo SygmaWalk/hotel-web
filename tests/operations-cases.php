@@ -39,6 +39,8 @@ check(request('solicitud.php?id='.$stayId,['csrf'=>$staffCsrf,'action'=>'checkou
 $stay=$hotel->stay($stayId);
 check($stay['checked_out_at']!==null && $stay['departure_actor']==='staff@example.test','fecha y actor salida');
 check(request('solicitud.php?id='.$stayId,['csrf'=>$staffCsrf,'action'=>'checkout'],'staff','POST')[0]===409,'checkout repetido rechazado');
+rejected(fn()=>$hotel->recordStay($otherId,'checkin',$adminId),'nueva llegada exige limpieza después de salida');
+$hotel->completeCleaning($opsRoom,$stayId,$adminId);
 $hotel->recordStay($otherId,'checkin',$adminId);
 check($hotel->stay($otherId)!==null,'nueva llegada después de salida');
 $pdo->prepare('UPDATE reservations SET check_in=?, check_out=? WHERE id=?')->execute([$day(-1),$day(0),$otherId]);
@@ -54,6 +56,7 @@ check($hotel->stay($stayId)!==null,'migración repetida conserva movimientos');
 
 // Dos recepcionistas no pueden registrar ingresos simultáneos en la misma habitación.
 $pdo->exec('UPDATE rooms SET active=1 WHERE id='.$opsRoom);
+$hotel->completeCleaning($opsRoom,$otherId,$adminId);
 $concurrentIds=[$newReservation($day(0),$day(2)),$newReservation($day(0),$day(2))];
 $pdo->beginTransaction();
 $pdo->query('SELECT id FROM rooms WHERE id='.$opsRoom.' FOR UPDATE');

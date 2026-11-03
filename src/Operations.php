@@ -18,6 +18,9 @@ trait HotelOperations
         try {
             $room = $this->query('SELECT * FROM rooms WHERE id = ? FOR UPDATE', [$initial['room_id']])->fetch();
             $reservation = $this->query('SELECT * FROM reservations WHERE id = ? FOR UPDATE', [$id])->fetch();
+            if ($reservation && (int) $reservation['room_id'] !== (int) $initial['room_id']) {
+                throw new DomainException('La reserva cambió de habitación. Actualizá el detalle antes de continuar.');
+            }
             $stay = $this->query('SELECT * FROM stays WHERE reservation_id = ? FOR UPDATE', [$id])->fetch();
             if ($reservation['status'] !== 'confirmed') throw new DomainException('Solo se registran movimientos de reservas confirmadas.');
             $now = date('Y-m-d H:i:s');
@@ -28,18 +31,73 @@ trait HotelOperations
                     throw new DomainException('La llegada debe registrarse desde la fecha de entrada y antes de la salida prevista.');
                 }
                 $occupied = $this->query('SELECT s.reservation_id FROM stays s JOIN reservations r ON r.id = s.reservation_id WHERE r.room_id = ? AND s.checked_out_at IS NULL LIMIT 1 FOR UPDATE', [$room['id']])->fetchColumn();
+                $this->assertNoMaintenance((int) $room['id'], date('Y-m-d'), $reservation['check_out']);
                 if ($occupied) throw new DomainException('La habitación tiene un huésped sin salida registrada. Registrá primero su salida.');
+                if ($this->pendingCleaning((int) $room['id'], true)) {
+                    throw new DomainException('La habitación está pendiente de limpieza. Marcala como lista en Limpieza antes de registrar la llegada.');
+                }
                 $this->query('INSERT INTO stays (reservation_id, checked_in_at, checked_in_by) VALUES (?, ?, ?)', [$id, $now, $actor]);
             } else {
                 if (!$stay) throw new DomainException('Primero debe registrarse la llegada.');
                 if ($stay['checked_out_at'] !== null) throw new DomainException('La salida ya está registrada.');
                 $this->query('UPDATE stays SET checked_out_at = ?, checked_out_by = ? WHERE reservation_id = ?', [$now, $actor, $id]);
+                // La salida y su limpieza pendiente se guardan juntas o se revierten juntas.
+                $this->query('INSERT INTO room_cleanings (reservation_id, pending_at) VALUES (?, ?)', [$id, $now]);
             }
             $this->pdo->commit();
         } catch (Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $error;
         }
+    }
+
+    public function pendingCleaning(int $roomId, bool $lock = false): ?array
+    {
+        return $this->query('SELECT c.*, r.room_id FROM room_cleanings c JOIN reservations r ON r.id = c.reservation_id
+            WHERE r.room_id = ? AND c.completed_at IS NULL ORDER BY c.pending_at, c.reservation_id LIMIT 1' . ($lock ? ' FOR UPDATE' : ''), [$roomId])->fetch() ?: null;
+    }
+
+    public function cleaningRooms(): array
+    {
+        return $this->query('SELECT h.id, h.code, h.name, h.active, c.reservation_id, c.pending_at,
+            EXISTS(SELECT 1 FROM stays s JOIN reservations r ON r.id = s.reservation_id
+                WHERE r.room_id = h.id AND s.checked_out_at IS NULL) AS occupied
+            FROM rooms h LEFT JOIN reservations r ON r.room_id = h.id
+                AND EXISTS(SELECT 1 FROM room_cleanings pending WHERE pending.reservation_id = r.id AND pending.completed_at IS NULL)
+            LEFT JOIN room_cleanings c ON c.reservation_id = r.id
+            ORDER BY (c.reservation_id IS NULL), c.pending_at, h.code')->fetchAll();
+    }
+
+    public function completeCleaning(int $roomId, int $reservationId, int $actor): void
+    {
+        $this->actor($actor);
+        $this->pdo->beginTransaction();
+        try {
+            // Misma puerta de entrada que check-in y check-out: evita cambios simultáneos contradictorios.
+            $room = $this->query('SELECT id FROM rooms WHERE id = ? FOR UPDATE', [$roomId])->fetch();
+            if (!$room) throw new DomainException('La habitación no existe.');
+            $pending = $this->pendingCleaning($roomId, true);
+            if (!$pending || (int) $pending['reservation_id'] !== $reservationId) {
+                throw new DomainException('Esta limpieza ya no está pendiente. Actualizá la página antes de continuar.');
+            }
+            $occupied = $this->query('SELECT s.reservation_id FROM stays s JOIN reservations r ON r.id = s.reservation_id
+                WHERE r.room_id = ? AND s.checked_out_at IS NULL LIMIT 1 FOR UPDATE', [$roomId])->fetchColumn();
+            if ($occupied) throw new DomainException('Hay un huésped sin salida registrada. Revisá la estadía antes de marcar la habitación como lista.');
+            $this->query('UPDATE room_cleanings SET completed_at = ?, completed_by = ? WHERE reservation_id = ?',
+                [date('Y-m-d H:i:s'), $actor, $reservationId]);
+            $this->pdo->commit();
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
+    public function recentCleanings(): array
+    {
+        return $this->query('SELECT c.reservation_id, c.completed_at, h.code, u.email AS completed_actor
+            FROM room_cleanings c JOIN reservations r ON r.id = c.reservation_id JOIN rooms h ON h.id = r.room_id
+            JOIN users u ON u.id = c.completed_by WHERE c.completed_at IS NOT NULL
+            ORDER BY c.completed_at DESC, c.reservation_id DESC LIMIT 10')->fetchAll();
     }
 
     public function stay(int $id): ?array

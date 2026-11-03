@@ -1,0 +1,44 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preparación de la entrega</title><link rel="stylesheet" href="informe.css"></head><body><nav class="toolbar"><a href="index.html">Documentación</a><a href="preparacion-entrega.md">Fuente editable</a></nav><main class="appendix" id="preparacion-entrega"><h1>Preparación de la entrega y exposición</h1>
+<p>Fecha prevista de entrega en la consigna: 16/11/2026. Esta lista organiza el cierre del trabajo y no agrega nuevas funciones al sistema.</p>
+<h2>Documentación preparada</h2>
+<ul>
+<li>Informe con portada adaptada a Hotel Aurora, José Dugarte, Desarrollo de Sistemas Web y profesora Milagros Luzzi.</li>
+<li>18 requisitos funcionales y 8 no funcionales con matriz de trazabilidad.</li>
+<li>Diagramas de arquitectura, relaciones operativas y estados; fuentes Mermaid editables.</li>
+<li>Diccionario de las once tablas del esquema actual.</li>
+<li>Registro de pruebas, corrección observada y capturas de demostración.</li>
+</ul>
+<p>El informe tiene una versión HTML local para lectura e impresión y una fuente Markdown editable. Las imágenes y estilos deben conservarse junto al HTML. El informe no se publicó en Drive; el documento de Empreges se utilizó únicamente como referencia de portada.</p>
+<h2>Controles todavía pendientes</h2>
+<ul>
+<li>Revisar el informe completo y personalizar la reflexión de cierre según lo que el estudiante pueda explicar en la defensa.</li>
+<li>Completar la revisión de pagos, mantenimiento y reprogramación en móvil y con teclado. Registrar ancho, navegador, pasos, resultado y correcciones si hicieran falta.</li>
+<li>Ensayar la entrega en una instalación local limpia y aislada: setup, carga demo, login y un recorrido completo. No vaciar ni sustituir la base del hotel para realizar ese ensayo.</li>
+<li>Preparar un paquete con el código local actualizado. No asumir que GitHub contiene las ampliaciones recientes ni publicar automáticamente sin revisar los archivos.</li>
+<li>Verificar que el paquete excluya config/local.php, config/access.local.txt, sesiones, cookies, datos de prueba temporales y copias privadas de bases. Las fotos necesarias para la demo se trasladan deliberadamente con su estructura.</li>
+<li>Confirmar el formato de entrega solicitado por la docente y guardar la versión final del informe una vez terminadas las revisiones.</li>
+</ul>
+<h2>Guion de exposición de ocho a diez minutos</h2>
+<table><thead><tr><th>Tiempo orientativo</th><th>Recorrido</th><th>Idea que debe explicarse</th></tr></thead><tbody>
+<tr><td>1 minuto</td><td>Presentar el hotel ficticio y el problema</td><td>Disponibilidad, presencia real, preparación y pagos son datos diferentes.</td></tr>
+<tr><td>1 minuto</td><td>Catálogo y solicitud pública</td><td>El POST valida y guarda una solicitud pendiente; no confirma automáticamente.</td></tr>
+<tr><td>2 minutos</td><td>Ingresar como recepción y abrir calendario</td><td>Crear una reserva directa; explicar fechas de entrada inclusiva y salida exclusiva.</td></tr>
+<tr><td>1 minuto</td><td>Abrir detalle y estadía</td><td>Llegada y salida son hechos reales; la salida genera limpieza.</td></tr>
+<tr><td>1 minuto</td><td>Revisar mantenimiento</td><td>Un bloqueo por fechas impide reservar y muestra conflictos existentes.</td></tr>
+<tr><td>1 minuto</td><td>Registrar seña y consultar Cobros</td><td>Mostrar saldo, concepto, responsable y diferencia entre anulación y devolución.</td></tr>
+<tr><td>1 minuto</td><td>Abrir diagramas y estructura del código</td><td>Navegador, PHP, PDO y base de datos; límites de la separación por responsabilidades.</td></tr>
+<tr><td>1 a 2 minutos</td><td>Pruebas y conclusión</td><td>Explicar una carrera de confirmaciones y la corrección del filtro inicial de Cobros.</td></tr>
+</tbody></table>
+<p>Utilizar datos ficticios, una reserva que corresponda a la fecha de exposición y una habitación disponible. No mostrar contraseñas, cookies o configuración privada. Una copia de los datos de la demostración debe prepararse antes; seed-demo no reinicia reservas modificadas.</p>
+<h2>Preguntas para practicar</h2>
+<ol>
+<li>¿Por qué se valida en PHP aunque el formulario tenga validación JavaScript?</li>
+<li>¿Qué diferencia hay entre autenticación, autorización y protección CSRF?</li>
+<li>¿Por qué una salida y una entrada el mismo día no se superponen?</li>
+<li>¿Cómo se evita que dos empleados confirmen una misma habitación a la vez?</li>
+<li>¿Por qué se conserva una reserva cancelada o un pago anulado?</li>
+<li>¿Qué ocurre si una reprogramación reduce el total después de recibir una seña?</li>
+<li>¿Qué prueban las 616 comprobaciones y qué no se puede concluir de ese número?</li>
+</ol>
+<h2>Referencia de la portada</h2>
+<p>Documento consultado: <a href="https://docs.google.com/document/d/1_fjBO8oJJ71Ig1lvkfIJ2QKMoQc4ATbt5mvIZEBSw44/edit?usp=drivesdk">Misión y Visión</a>, dentro de TSDS_PP3_EMPREGES_DUGARTE_2026 / 02_ANALISIS. Se conservan el encabezado institucional, la carrera, el estudiante y la disposición de portada. Se reemplazan materia, título y docente; Milagros Luzzi fue indicada por el estudiante en esta conversación. No se copió contenido académico de Empreges al informe de Hotel Aurora.</p></main></body></html>

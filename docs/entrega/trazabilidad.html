@@ -1,0 +1,47 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trazabilidad de requisitos</title><link rel="stylesheet" href="informe.css"></head><body><nav class="toolbar"><a href="index.html">Documentación</a><a href="trazabilidad.md">Fuente editable</a></nav><main class="appendix" id="trazabilidad"><h1>Matriz de trazabilidad</h1>
+<p>Hotel Aurora. Revisión documental del 23/10/2026. Las rutas se expresan desde la raíz del proyecto. Los identificadores RF y RNF pertenecen a este informe; no sustituyen los identificadores históricos de Jira.</p>
+<h2>Requisitos funcionales</h2>
+<table><thead><tr><th>ID</th><th>Evidencia de implementación</th><th>Evidencia de pruebas</th></tr></thead><tbody>
+<tr><td>RF01</td><td>public/habitaciones.php, public/imagen.php, src/Hotel.php</td><td>tests/run.php y tests/operations-cases.php: catálogo activo, estado vacío e imágenes.</td></tr>
+<tr><td>RF02</td><td>public/reservar.php, src/Validation.php, Hotel::submit</td><td>tests/run.php: validación, envío y repetición de token.</td></tr>
+<tr><td>RF03</td><td>public/login.php, public/logout.php, src/bootstrap.php</td><td>tests/run.php: acceso, cierre y límite de intentos.</td></tr>
+<tr><td>RF04</td><td>public/solicitudes.php, public/solicitud.php</td><td>tests/run.php: filtros, detalle e identificador inválido.</td></tr>
+<tr><td>RF05</td><td>Hotel::resolve</td><td>tests/run.php y tests/confirm-worker.php: cruces y confirmaciones concurrentes; tests/maintenance-cases.php: bloqueo por mantenimiento.</td></tr>
+<tr><td>RF06</td><td>public/reserva-nueva.php, Hotel::createReservation</td><td>tests/reception-cases.php y tests/reception-worker.php.</td></tr>
+<tr><td>RF07</td><td>public/dashboard.php, views/dashboard-content.php, Hotel::dashboard</td><td>tests/run.php: indicadores, fecha, vacío y escape; casos de limpieza y mantenimiento.</td></tr>
+<tr><td>RF08</td><td>public/calendario.php, public/calendario-datos.php, public/js/calendar.js</td><td>tests/run.php y tests/calendar-month-cases.php: rangos, estados, filtros y JSON privado.</td></tr>
+<tr><td>RF09</td><td>public/solicitud.php, HotelOperations::recordStay</td><td>tests/operations-cases.php y tests/stay-worker.php.</td></tr>
+<tr><td>RF10</td><td>public/limpieza.php, HotelOperations</td><td>tests/cleaning-cases.php y tests/cleaning-worker.php.</td></tr>
+<tr><td>RF11</td><td>public/mantenimiento.php, src/Maintenance.php</td><td>tests/maintenance-cases.php y tests/maintenance-worker.php.</td></tr>
+<tr><td>RF12</td><td>public/solicitud.php, Hotel::cancelReservation</td><td>tests/cancellation-cases.php y tests/cancellation-worker.php.</td></tr>
+<tr><td>RF13</td><td>public/reserva-reprogramar.php, src/Rescheduling.php</td><td>tests/reschedule-cases.php y tests/reschedule-worker.php.</td></tr>
+<tr><td>RF14</td><td>public/reserva-pagos.php, HotelPayments::recordPayment</td><td>tests/payment-cases.php: importes, tipo, fecha, medio, permisos y reenvíos.</td></tr>
+<tr><td>RF15</td><td>views/payment-balance.php, HotelPayments::paymentBalance y voidPayment</td><td>tests/payment-cases.php: saldo, crédito, devolución y anulación; tests/payment-worker.php: concurrencia.</td></tr>
+<tr><td>RF16</td><td>public/cobros.php, HotelPayments::dailyPayments</td><td>tests/payment-cases.php: fecha, desglose y exclusión de anulados.</td></tr>
+<tr><td>RF17</td><td>public/habitaciones-admin.php, src/Hotel.php, src/RoomImages.php</td><td>tests/run.php y tests/operations-cases.php: administración, bajas, reactivación y archivos.</td></tr>
+<tr><td>RF18</td><td>public/usuarios.php, HotelOperations::createStaff</td><td>tests/operations-cases.php: rol fijo, contraseñas, correo y autorización.</td></tr>
+</tbody></table>
+<h2>Requisitos no funcionales</h2>
+<table><thead><tr><th>ID</th><th>Evidencia</th><th>Alcance de la conclusión</th></tr></thead><tbody>
+<tr><td>RNF01</td><td>requireUser, actor y casos HTTP por rol</td><td>Acceso probado en las rutas de la suite.</td></tr>
+<tr><td>RNF02</td><td>Validation.php, bootstrap.php, prepare/execute y función e</td><td>Se prueban formatos inválidos, CSRF y escape. No equivale a pentest.</td></tr>
+<tr><td>RNF03</td><td>Transacciones InnoDB, FOR UPDATE y workers de pruebas</td><td>Escenarios concurrentes controlados; no ensayo de carga masiva.</td></tr>
+<tr><td>RNF04</td><td>Tokens únicos, tablas de historial y casos de repetición</td><td>Evita repetir una misma alta; no impide todas las duplicaciones humanas con formularios diferentes.</td></tr>
+<tr><td>RNF05</td><td>Etiquetas, navegación, CSS adaptable y revisión visual histórica</td><td>Falta repetir revisión móvil y teclado sobre los módulos nuevos.</td></tr>
+<tr><td>RNF06</td><td>schema.sql, migrate.php, setup.php y seed-demo.php</td><td>Migraciones y demo probadas. Ensayo final del paquete en instalación limpia pendiente.</td></tr>
+<tr><td>RNF07</td><td>.htaccess, exclusiones Git, cuenta limitada y manejador de errores</td><td>Protección local configurada; revisar configuración antes de un despliegue público.</td></tr>
+<tr><td>RNF08</td><td>Carpetas public, views, src, database, scripts, tests y docs</td><td>Inspección de organización; no se afirma arquitectura MVC completa.</td></tr>
+</tbody></table>
+<h2>Cobertura de la consigna</h2>
+<table><thead><tr><th>Sección solicitada</th><th>Ubicación en el informe</th></tr></thead><tbody>
+<tr><td>Identificación, temática y propósito</td><td>Portada y sección 1.</td></tr>
+<tr><td>Problema, objetivos y actores</td><td>Sección 1.</td></tr>
+<tr><td>Al menos 10 requisitos funcionales</td><td>Sección 2: RF01 a RF18.</td></tr>
+<tr><td>Al menos 5 requisitos no funcionales</td><td>Sección 3: RNF01 a RNF08.</td></tr>
+<tr><td>Entidades principales</td><td>Sección 5 y diccionario-datos.md.</td></tr>
+<tr><td>Funcionalidades operativas</td><td>Sección 2 y guías de cada módulo.</td></tr>
+<tr><td>Arquitectura y decisiones</td><td>Secciones 4 y 6.</td></tr>
+<tr><td>Pruebas y correcciones</td><td>Sección 7, anexo visual y docs/pruebas-cierre.md.</td></tr>
+<tr><td>Ejecución, limitaciones y conclusión</td><td>Secciones 8 y 9.</td></tr>
+</tbody></table>
+<p>Los resultados corresponden a la última ejecución registrada de 616 y 17 comprobaciones. La actualización de este informe no ejecuta nuevamente las pruebas ni modifica reservas. El estado del código local no acredita que el repositorio remoto o Jira estén actualizados.</p></main></body></html>

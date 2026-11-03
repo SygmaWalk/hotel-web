@@ -1,0 +1,27 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Diccionario de datos</title><link rel="stylesheet" href="informe.css"></head><body><nav class="toolbar"><a href="index.html">Documentación</a><a href="diccionario-datos.md">Fuente editable</a></nav><main class="appendix" id="diccionario-datos"><h1>Diccionario de datos</h1>
+<p>Hotel Aurora. Esquema de referencia: database/schema.sql al 23/10/2026. PK significa clave primaria y FK clave foránea. Los nombres de columnas son los del código; las agrupaciones no agregan entidades que no existan.</p>
+<table><thead><tr><th>Tabla y PK</th><th>Campos centrales</th><th>Relaciones y restricciones</th></tr></thead><tbody>
+<tr><td>rooms · id</td><td>code, name, capacity, nightly_rate, active</td><td>Código único; capacidad mayor que cero; tarifa no negativa. Desactivar conserva referencias.</td></tr>
+<tr><td>users · id</td><td>email, password_hash, role</td><td>Correo único; rol admin o staff; hash de contraseña.</td></tr>
+<tr><td>reservations · id</td><td>room_id, guest_name, email, check_in, check_out, nightly_rate, status, submission_token, created_at, resolved_by, resolved_at</td><td>FK a rooms y opcional a users para resolución. Salida posterior a entrada. Token único; índice de disponibilidad por habitación, estado y fechas.</td></tr>
+<tr><td>stays · reservation_id</td><td>checked_in_at, checked_in_by, checked_out_at, checked_out_by</td><td>PK también FK a reservations. Usuarios de ingreso y salida; salida y su actor opcionales. Salida no anterior al ingreso.</td></tr>
+<tr><td>room_cleanings · reservation_id</td><td>pending_at, completed_at, completed_by</td><td>PK también FK a stays. Finalización y usuario simultáneamente presentes o ausentes; fecha de finalización no anterior a pendiente.</td></tr>
+<tr><td>room_images · id</td><td>room_id, filename, mime_type, created_at</td><td>FK a rooms; nombre de archivo único. La imagen reside en storage/rooms.</td></tr>
+<tr><td>reservation_cancellations · reservation_id</td><td>reason, cancelled_at, cancelled_by</td><td>PK también FK a reservations; FK de actor a users; motivo entre 1 y 500 caracteres.</td></tr>
+<tr><td>reservation_changes · id</td><td>reservation_id, old_room_id, new_room_id, old_room_code, new_room_code, old_check_in, old_check_out, new_check_in, new_check_out, old_nightly_rate, new_nightly_rate, reason, changed_at, changed_by</td><td>FK a reserva, habitaciones de origen y destino y usuario. Fechas y tarifas anteriores/nuevas se conservan como instantánea histórica.</td></tr>
+<tr><td>room_maintenance · id</td><td>room_id, start_date, end_date, reason, created_at, created_by, submission_token, released_at, released_by, release_reason</td><td>FK a habitación y usuarios; fin posterior al inicio; token único; datos de levantamiento completos o nulos.</td></tr>
+<tr><td>reservation_payments · id</td><td>reservation_id, kind, amount, method, paid_on, note, recorded_at, recorded_by, submission_token, voided_at, voided_by, void_reason</td><td>FK a reserva y usuarios; importe positivo DECIMAL(12,2); token único; auditoría de anulación completa o nula.</td></tr>
+<tr><td>login_attempts · identity_hash</td><td>failures, last_failure</td><td>Sin FK a users: se controla también una identidad que no existe como cuenta. No almacena la contraseña intentada.</td></tr>
+</tbody></table>
+<h2>Valores de dominio</h2>
+<ul>
+<li>reservations.status: pending, confirmed, rejected, cancelled.</li>
+<li>users.role: admin, staff.</li>
+<li>reservation_payments.kind: deposit, payment, refund.</li>
+<li>reservation_payments.method: cash, transfer, card, other.</li>
+</ul>
+<h2>Reglas de integridad en el servidor</h2>
+<p>Las claves foráneas garantizan referencias existentes, pero no expresan todas las reglas de negocio. El servidor comprueba fechas respecto de hoy, solapamientos, permisos, limpieza, huéspedes sin salida y saldo disponible. La revisión y la escritura se realizan dentro de transacciones cuando es necesario proteger una decisión concurrente.</p>
+<p>La tarifa acordada está en reservations; cambiar la tarifa del catálogo no modifica automáticamente esa reserva. Reprogramar dentro de la misma habitación conserva la tarifa y cambiar de habitación utiliza la vigente del destino. El total se obtiene multiplicando noches por tarifa; no existe una columna de total ni una tabla separada de huéspedes.</p>
+<p>El mantenimiento tiene fin exclusivo. Si se levanta, deja de afectar hoy y las noches futuras, conservando las noches anteriores. Los pagos vigentes son los que tienen voided_at nulo; las anulaciones conservan la fila original. El saldo es calculado y no una columna editable.</p>
+<p>Las fechas y horas operativas se generan con la zona America/Argentina/Buenos_Aires. paid_on es la fecha declarada del movimiento, mientras recorded_at registra cuándo se cargó. La aplicación limita la fecha declarada al intervalo desde 2000 hasta hoy.</p></main></body></html>

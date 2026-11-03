@@ -5,7 +5,7 @@
  const form = root.querySelector('form'), month = form.elements.month, room = form.elements.room_id;
  const content = root.querySelector('[data-month-content]'), status = root.querySelector('[role="status"]');
  const dialog = root.querySelector('dialog'), detail = dialog.querySelector('[data-detail]');
- const labels = {free:'Libre', reserved:'Reservada', expected:'Ocupada prevista', inactive:'Inactiva', occupied:'Estadía registrada'};
+ const labels = {free:'Libre', reserved:'Reservada', expected:'Ocupada prevista', inactive:'Inactiva', occupied:'Estadía registrada', maintenance:'En mantenimiento'};
  const fmt = value => new Intl.DateTimeFormat('es-AR', {dateStyle:'medium'}).format(new Date(value + 'T12:00:00'));
  let controller, data, trigger;
  function node(tag, text, cls) { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if(cls) n.className = cls; return n; }
@@ -22,6 +22,16 @@
  function render(next) {
    const fragment = document.createDocumentFragment();
    fragment.append(node('h2', new Intl.DateTimeFormat('es-AR',{month:'long',year:'numeric'}).format(new Date(next.from+'T12:00:00'))));
+   const cleaning = node('div', undefined, 'calendar-cleaning');
+   cleaning.append(node('h3', 'Limpieza actual'), node('p', 'Estado de ahora, no de las fechas consultadas. La limpieza pendiente impide registrar llegadas; las reservas futuras se conservan.', 'data-note'));
+   const cleaningList = node('ul', undefined, 'calendar-legend');
+   for (const item of next.rooms) {
+     const pending = Number(item.cleaning_pending);
+     cleaningList.append(node('li', item.code + ' · ' + (pending ? 'Pendiente de limpieza' : 'Sin limpieza pendiente') + (!Number(item.active) ? ' · Inactiva' : ''), 'calendar-state ' + (pending ? 'cleaning' : 'free')));
+   }
+   cleaning.append(cleaningList);
+   const cleaningLink = node('a', 'Gestionar limpieza'); cleaningLink.href = 'limpieza.php'; cleaning.append(cleaningLink);
+   fragment.append(cleaning);
    if (!next.rooms.length) fragment.append(node('p','No hay habitaciones para mostrar.', 'notice'));
    else {
      const grid = node('div', undefined, 'month-grid');
@@ -38,6 +48,16 @@
        for(const item of next.rooms) {
          const cell=next.cells[item.id][date], block=node('div',undefined,'month-room');
          block.append(node('span',item.code+' · '+labels[cell.state]+(!Number(item.active)?' · Habitación inactiva':''),'calendar-state '+cell.state));
+         for (const maintenance of cell.maintenance) {
+           const link = node('a', 'Mantenimiento #' + maintenance.id, 'calendar-movement');
+           link.href = 'mantenimiento.php?block_id=' + encodeURIComponent(maintenance.id) + '#block-' + encodeURIComponent(maintenance.id); block.append(link);
+         }
+         if (cell.state === 'free' && Number(item.active) && date >= next.today && date < next.limit) {
+           const create = node('a', '+ Reservar', 'calendar-create');
+           create.href = 'reserva-nueva.php?' + new URLSearchParams({check_in:date, room_id:item.id});
+           create.setAttribute('aria-label', 'Reservar habitación ' + item.code + ' desde el ' + fmt(date));
+           block.append(create);
+         }
          const entries=new Map();
          for(const [key,prefix] of [['stays','Reserva'],['arrivals','Entrada prevista'],['departures','Salida prevista'],['actuals','Registro real']]) {
            for(const res of cell[key]) {

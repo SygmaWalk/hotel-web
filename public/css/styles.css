@@ -161,7 +161,11 @@ th, td { padding:1rem; border-bottom:1px solid var(--line); }
 th { background:#eaf0ed; }
 .badge { display:inline-block; padding:.25rem .65rem; border-radius:20px; background:#f7edce; white-space:nowrap; font-size:.875rem; }
 .badge.confirmed { background:#e3efde; }
-.badge.rejected { background:#f3e2df; }
+.badge.rejected, .badge.cancelled { background:#f3e2df; }
+.button.danger { background:#943e2b; }
+.button.danger:hover { background:#743021; }
+.cancellation-reason { white-space:pre-wrap; overflow-wrap:anywhere; }
+textarea { display:block; width:100%; min-height:100px; resize:vertical; border:1px solid #839494; border-radius:2px; padding:.65rem .8rem; font:inherit; color:var(--ink); background:white; }
 .detail-panel { display:grid; grid-template-columns:180px 1fr; gap:.8rem 2rem; border:1px solid var(--line); background:white; padding:2rem; }
 .detail-panel dt { font-weight:bold; }
 .detail-panel dd { margin:0; overflow-wrap:anywhere; }
@@ -317,6 +321,18 @@ tbody tr:hover { background:#f5f8f5; }
 .room-gallery a { flex:0 0 85%; scroll-snap-align:start; }
 .room-gallery img { width:100%; height:auto; aspect-ratio:1.5; object-fit:cover; border-radius:4px; }
 .calendar-state.occupied, .calendar-cell.occupied { background:#dcefee; color:#143e3b; }
+.calendar-state.cleaning { background:#fff0cf; color:#714b0d; }
+.calendar-state.maintenance, .room-state.maintenance { background:#eee2f5; color:#60377c; }
+.calendar-cell.maintenance { background:#f7f0fb; }
+.cleaning-note { color:#714b0d; font-weight:bold; }
+.calendar-cleaning { margin:1rem 0; padding:1rem; border:1px solid #cbd5d1; border-radius:.6rem; }
+.calendar-cleaning > a { display:inline-flex; align-items:center; min-height:44px; margin-top:.5rem; }
+.cleaning-list { list-style:none; padding:0; margin:0; }
+.cleaning-list > li { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; padding:1.25rem 0; border-bottom:1px solid #dce4df; }
+.cleaning-list h3 { margin:0 0 .6rem; overflow-wrap:anywhere; }
+.cleaning-list p { margin:.6rem 0 0; }
+.cleaning-list > li > div { min-width:0; flex:1 1 240px; }
+.cleaning-list > li > form { flex:0 1 auto; }
 .spaced-heading { margin-top:2rem; }
 
 /* Calendario mensual: el texto acompaña a cada color de disponibilidad. */
@@ -326,6 +342,7 @@ tbody tr:hover { background:#f5f8f5; }
 .month-day h3 {font-size:.85rem;margin:0 0 .7rem}
 .month-day[aria-current] {outline:2px solid #24695c}
 .month-room {border-top:1px solid #e2e8e5;padding:.5rem 0}
+.calendar-create {display:inline-flex;align-items:center;min-height:44px;margin-top:.25rem;font-size:.8rem;font-weight:600;color:#20594d}
 .month-room .calendar-state {white-space:normal;display:block;font-size:.75rem}
 .month-reservation {display:block;border:0;background:transparent;color:#20594d;text-align:left;text-decoration:underline;font:inherit;font-size:.8rem;padding:.5rem 0;overflow-wrap:anywhere;cursor:pointer}
 .month-unavailable {background:#f1f3f2;color:#666}

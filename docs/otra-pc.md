@@ -1,6 +1,6 @@
 # Continuar en otra PC
 
-GitHub guarda el código, el esquema y los scripts de instalación y demostración. MySQL guarda los datos localmente en cada computadora: hacer pull no copia ni sincroniza una base de datos.
+La rama main incluye el código, el esquema SQL, los scripts de instalación y demostración y el informe local en docs/entrega. Para leer el informe, abrí docs/entrega/index.html desde el explorador de archivos. MySQL guarda los datos localmente en cada computadora: hacer pull no copia ni sincroniza una base de datos.
 
 ## Primera preparación en Windows con XAMPP
 
@@ -42,11 +42,15 @@ La carga agrega tres pendientes, cuatro confirmadas y una rechazada. Repetirla n
 
 ## Siguientes actualizaciones
 
-Con la instalación funcionando, actualizar con git pull --ff-only origin main y ejecutar C:\xampp\php\php.exe scripts/migrate.php. Esta entrega agrega stays y room_images; la migración puede repetirse. No volver a ejecutar setup en una instalación existente. La configuración y las reservas locales se conservan. Si Git informa cambios locales o ramas divergentes, resolverlos antes de actualizar; no usar un reset para descartar trabajo.
+Con la instalación funcionando, actualizar con git pull --ff-only origin main y ejecutar C:\xampp\php\php.exe scripts/migrate.php. La versión local incluye estadías, imágenes, limpieza, cancelaciones, reprogramaciones, mantenimiento, pagos manuales y avisos de reserva por correo; la migración incorpora las tablas faltantes y puede repetirse. No volver a ejecutar setup en una instalación existente. La configuración y las reservas locales se conservan. Si Git informa cambios locales o ramas divergentes, resolverlos antes de actualizar; no usar un reset para descartar trabajo.
 
 Para trabajar alternando PCs: guardar y subir los cambios de código en una antes de hacer pull en la otra. Las reservas, cuentas y contraseñas de MySQL permanecen independientes. Las fotos de storage/rooms tampoco viajan con Git: copiarlas de forma privada junto con la base si necesitás los mismos datos en ambas PCs.
 
 Si en el futuro necesitás trasladar exactamente una base con cambios propios, habrá que exportarla e importarla de forma privada, con una copia de respaldo del destino. No subir dumps con cuentas o datos personales al repositorio. Una base remota compartida sería otra configuración distinta; no es necesaria para continuar este proyecto localmente.
+
+## Correos en la otra PC
+
+El correo es opcional. El proyecto clonado funciona sin credenciales de Gmail. Para activarlo, seguí la [guía de correos](correos.md). No se sube config/mail.local.php.
 
 ## Comprobación opcional
 
@@ -55,4 +59,4 @@ Si en el futuro necesitás trasladar exactamente una base con cambios propios, h
 & C:\xampp\php\php.exe tests/seed-demo.php
 ```
 
-Resultados de esta entrega: 186 y 17 verificaciones respectivamente. Las pruebas crean y eliminan únicamente sus bases temporales, no hotel_aurora. Requieren las extensiones PHP PDO MySQL, mbstring y cURL, proc_open habilitado y acceso al MySQL local. Ante una configuración de MySQL personalizada, revisar README.md antes de instalar.
+Última verificación de la versión con correos: 653 comprobaciones del sistema y 17 de datos demo. Las pruebas crean y eliminan únicamente sus bases temporales, no hotel_aurora. Requieren las extensiones PHP PDO MySQL, mbstring y cURL, proc_open habilitado y acceso al MySQL local. Ante una configuración de MySQL personalizada, revisar README.md antes de instalar.

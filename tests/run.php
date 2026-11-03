@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') exit;
+// El servidor HTTP de pruebas hereda este entorno y nunca usa la cuenta Gmail real.
+putenv('HOTEL_MAIL_CONFIG_PATH=' . __DIR__ . '/.runtime/no-real-mail-' . bin2hex(random_bytes(8)));
 require_once dirname(__DIR__) . '/src/Database.php';
 require_once dirname(__DIR__) . '/src/Hotel.php';
 date_default_timezone_set('America/Argentina/Buenos_Aires');
@@ -253,6 +255,13 @@ try {
     check(request('habitaciones-admin.php?id='.$raceRoom,['csrf'=>$adminCsrf,'action'=>'deactivate','acknowledged'=>'1'],'admin','POST')[0] === 303, 'baja aceptada HTTP');
     require __DIR__ . '/operations-cases.php';
     require __DIR__ . '/calendar-month-cases.php';
+    require __DIR__ . '/reception-cases.php';
+    require __DIR__ . '/cleaning-cases.php';
+    require __DIR__ . '/cancellation-cases.php';
+    require __DIR__ . '/reschedule-cases.php';
+    require __DIR__ . '/maintenance-cases.php';
+    require __DIR__ . '/payment-cases.php';
+    require __DIR__ . '/email-cases.php';
     check(request('logout.php',['csrf'=>$adminCsrf],'admin','POST')[0] === 303 && request('solicitudes.php',[],'admin')[0] === 303, 'logout invalida acceso');
     $lockForm=request('login.php',[],'locked')[1]; $lockCsrf=token($lockForm);
     for($i=0;$i<5;$i++) request('login.php',['csrf'=>$lockCsrf,'email'=>'locked@example.test','password'=>'wrong'],'locked','POST');

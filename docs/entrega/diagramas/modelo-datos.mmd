@@ -1,0 +1,21 @@
+erDiagram
+ rooms ||--o{ reservations : recibe
+ rooms ||--o{ room_images : tiene
+ rooms ||--o{ room_maintenance : tiene
+ rooms ||--o{ reservation_changes : origen_y_destino
+ reservations ||--o| stays : registra
+ stays ||--o| room_cleanings : genera
+ reservations ||--o| reservation_cancellations : cancela
+ reservations ||--o{ reservation_changes : reprograma
+ reservations ||--o{ reservation_payments : registra
+ users o|--o{ reservations : resuelve
+ users ||--o{ stays : registra_llegada
+ users o|--o{ stays : registra_salida
+ users o|--o{ room_cleanings : completa
+ users ||--o{ reservation_cancellations : cancela
+ users ||--o{ reservation_changes : cambia
+ users ||--o{ room_maintenance : crea
+ users o|--o{ room_maintenance : levanta
+ users ||--o{ reservation_payments : registra
+ users o|--o{ reservation_payments : anula
+ login_attempts { string identity_hash PK }

@@ -1,0 +1,12 @@
+stateDiagram-v2
+ [*] --> Pendiente: solicitud pública
+ [*] --> Confirmada: alta desde recepción
+ Pendiente --> Confirmada: confirmar
+ Pendiente --> Rechazada: rechazar
+ Confirmada --> Cancelada: sin llegada
+ Confirmada --> Confirmada: reprogramar sin llegada
+ note right of Confirmada
+ Llegada y salida se registran en stays.
+ La salida genera limpieza pendiente.
+ No cambian el estado de la reserva.
+ end note
