@@ -21,17 +21,23 @@ pageStart('Limpieza de habitaciones', $user);
 ?>
 <p class="intro">Después de cada salida registrada, la habitación queda pendiente de limpieza. Marcala como lista cuando haya terminado la limpieza y esté preparada para recibir al próximo huésped.</p>
 <p class="data-note">Este estado es actual. No cancela reservas ni bloquea fechas futuras; impide registrar una nueva llegada hasta que la habitación esté lista.</p>
+<div class="admin-metrics" aria-label="Resumen de limpieza">
+<div><span>Pendientes de limpieza</span><strong><?= $pendingCount ?></strong></div>
+<div><span>Con huésped alojado</span><strong><?= count(array_filter($rooms, fn($r) => (bool)$r['occupied'])) ?></strong></div>
+<div><span>Sin limpieza pendiente ni huésped</span><strong><?= count(array_filter($rooms, fn($r) => !$r['reservation_id'] && !$r['occupied'])) ?></strong></div>
+</div>
 <?php errorSummary($errors); ?>
 <section class="dashboard-panel spaced-heading" id="cleaning-list" tabindex="-1" aria-labelledby="cleaning-title">
 <div class="panel-heading"><h2 id="cleaning-title">Estado actual</h2><span class="count-pill"><?= $pendingCount ?> <?= $pendingCount === 1 ? 'pendiente' : 'pendientes' ?></span></div>
 <?php if (!$rooms): ?><p>No hay habitaciones cargadas.</p><?php else: ?>
 <?php if (!$pendingCount): ?><p class="notice success">No hay limpiezas pendientes.</p><?php endif ?>
-<ul class="cleaning-list">
+<ul class="cleaning-list admin-cleaning-grid">
 <?php foreach ($rooms as $room): ?>
-<li><div><h3><?= e($room['code'] . ' · ' . $room['name']) ?></h3>
+<li id="limpieza-habitacion-<?= (int) $room['id'] ?>" tabindex="-1"><div><h3><?= e($room['code'] . ' · ' . $room['name']) ?></h3>
 <span class="calendar-state <?= $room['reservation_id'] ? 'cleaning' : ($room['occupied'] ? 'occupied' : 'free') ?>"><?= $room['reservation_id'] ? 'Pendiente de limpieza' : ($room['occupied'] ? 'En uso · sin limpieza pendiente' : 'Lista · sin limpieza pendiente') ?></span>
 <?php if (!$room['active']): ?><p class="data-note">Habitación inactiva. Marcarla como lista no la reactiva.</p><?php endif ?>
 <?php if ($room['reservation_id']): ?><p>Pendiente desde <?= e($room['pending_at']) ?> · <a href="<?= e(url('solicitud.php?id=' . $room['reservation_id'])) ?>">Ver salida de la reserva #<?= (int) $room['reservation_id'] ?></a></p><?php endif ?>
+<?php if (!empty($room['next_check_in'])): ?><p class="admin-next-arrival">Próxima entrada: <strong><?= e((new DateTimeImmutable($room['next_check_in']))->format('d/m/Y')) ?></strong></p><?php endif ?>
 </div>
 <?php if ($room['reservation_id'] && !$room['occupied']): ?><form method="post" action="<?= e(url('limpieza.php')) ?>">
 <?php csrfInput(); ?><input type="hidden" name="action" value="complete"><input type="hidden" name="room_id" value="<?= (int) $room['id'] ?>"><input type="hidden" name="reservation_id" value="<?= (int) $room['reservation_id'] ?>">

@@ -41,7 +41,7 @@ errorSummary($errors);
 <input id="images" name="images[]" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="image-help">
 <p id="image-help" class="data-note">Hasta 5 fotos por habitación, JPG, PNG o WebP. Máximo 1 MB por foto. Si hay errores, seleccioná los archivos nuevamente.</p>
 <?php if ($id !== null): ?><?php roomGallery($id, $data['name'] ?? 'Habitación'); ?><?php endif ?>
-<button class="button">Guardar habitación</button> <a href="<?= e(url('habitaciones-admin.php')) ?>">Nueva / cancelar</a></form>
+<button class="button">Guardar habitación</button> <a href="<?= e(url('habitaciones-admin.php')) ?>"><?= $id === null ? 'Limpiar formulario' : 'Cancelar edición' ?></a></form>
 <?php if ($id !== null && hotel()->room($id)['active']): ?>
 <form method="post" class="form-panel danger-zone"><?php csrfInput() ?><input type="hidden" name="action" value="deactivate">
 <h3>Desactivar habitación</h3><p>Dejará de ofrecerse. Las reservas y solicitudes existentes se conservarán.</p>

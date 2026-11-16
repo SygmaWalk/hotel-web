@@ -22,23 +22,9 @@ $calendarUrl = fn(string $start, string $end): string => url('calendario.php?' .
 $labels = ['free'=>'Libre', 'reserved'=>'Reservada', 'expected'=>'Ocupada prevista', 'inactive'=>'Inactiva', 'occupied'=>'Estadía registrada', 'maintenance'=>'En mantenimiento'];
 pageStart('Calendario de disponibilidad', $user);
 ?>
-<p class="intro">Consultá las noches de cada habitación hasta el <?= e(bookingLimit()) ?>, un año desde hoy. Podés consultar fechas pasadas.</p>
-<p><a class="button" href="<?= e(url('reserva-nueva.php')) ?>">Nueva reserva</a> <span class="data-note">Elegí fechas y consultá habitaciones disponibles.</span></p>
-<p><a href="<?= e(url('mantenimiento.php')) ?>">Gestionar mantenimiento</a> · Los bloqueos impiden reservar durante las noches indicadas.</p>
-<section data-month-calendar data-today="<?= e(date('Y-m-d')) ?>" hidden aria-label="Calendario mensual interactivo">
-<form class="filter-form">
-<div><label for="month">Mes</label><input id="month" name="month" type="month" required min="2000-01" max="<?= e(substr(bookingLimit(),0,7)) ?>" value="<?= e(validDate($from) && $from >= '2000-01-01' && $from <= bookingLimit() ? substr($from,0,7) : date('Y-m')) ?>"></div>
-<div><label for="month-room">Habitación</label><select id="month-room" name="room_id"><option value="">Todas las habitaciones</option><?php foreach (hotel()->rooms(true) as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $roomValue === (string)$item['id'] ? 'selected' : '' ?>><?= e($item['code'].' · '.$item['name'].(!$item['active']?' · Inactiva':'')) ?></option><?php endforeach ?></select></div>
-<button class="button" type="submit">Ver mes</button>
-</form>
-<div class="calendar-pagination"><button type="button" data-shift="-1">← Mes anterior</button><button type="button" data-today>Hoy</button><button type="button" data-shift="1">Mes siguiente →</button></div>
-<p role="status" aria-live="polite"></p>
-<p>Hacé clic en una reserva para ver su detalle o en «Reservar» para cargar una nueva desde una noche libre. Pendientes y rechazadas no bloquean noches. La salida prevista no ocupa esa noche; una salida anticipada no cancela las noches contratadas.</p>
-<div data-month-content></div>
-<dialog aria-label="Detalle de reserva"><button type="button" data-close autofocus>Cerrar detalle</button><div data-detail></div></dialog>
-</section>
-<script src="<?= e(assetUrl('js/calendar.js')) ?>" defer></script>
-<h2>Consulta por fechas</h2>
+<link rel="stylesheet" href="<?= e(assetUrl('css/planning.css')) ?>"><p class="intro">Consultá las noches de cada habitación hasta el <?= e($formatDate(bookingLimit())) ?>, un año desde hoy. Podés consultar fechas pasadas.</p>
+<div class="admin-toolbar"><a class="button" href="<?= e(url('reserva-nueva.php')) ?>">Nueva reserva</a><a class="button secondary" href="<?= e(url('mantenimiento.php')) ?>">Gestionar mantenimiento</a><a href="#calendar-range">Ir a disponibilidad</a></div>
+<details class="planner-extra" open><summary>Filtrar por habitación o fechas</summary>
 <form method="get" class="filter-form calendar-filter">
     <div><label for="from">Primera noche</label><input id="from" name="from" type="date" required min="2000-01-01" max="<?= e(bookingLimit()) ?>" value="<?= e($from) ?>" <?= isset($errors['from']) ? 'aria-invalid="true"' : '' ?>></div>
     <div><label for="to">Última noche</label><input id="to" name="to" type="date" required min="2000-01-01" max="<?= e(bookingLimit()) ?>" value="<?= e($to) ?>"></div>
@@ -48,7 +34,7 @@ pageStart('Calendario de disponibilidad', $user);
     <button class="button" type="submit">Consultar calendario</button>
     <a href="<?= e(url('calendario.php')) ?>">Hoy y próximas noches</a>
 </form>
-<?php errorSummary($errors); ?>
+</details><?php errorSummary($errors); ?>
 <?php if ($calendar): ?>
 <section class="calendar-section" aria-labelledby="calendar-range">
     <div class="panel-heading calendar-heading">
@@ -63,7 +49,7 @@ pageStart('Calendario de disponibilidad', $user);
         <?php if ($nextStart <= bookingLimit()): ?><a href="<?= e($calendarUrl($nextStart, min($nextEnd, bookingLimit()))) ?>">Siguientes →</a><?php endif ?>
         </nav>
     </div>
-    <ul class="calendar-legend" aria-label="Estados del calendario">
+    <?php if ($calendar['rooms']) require dirname(__DIR__) . '/views/bandas.php'; ?><details class="planner-extra"><summary>Ver movimientos y detalle por noche</summary><ul class="calendar-legend" aria-label="Estados del calendario">
         <?php foreach ($labels as $state => $label): ?><li class="calendar-state <?= e($state) ?>"><?= e($label) ?></li><?php endforeach ?>
     </ul>
     <p class="panel-description" id="calendar-help">Las reservas confirmadas bloquean desde la entrada hasta la noche anterior a la salida. Pendientes y rechazadas no bloquean. «Ocupada prevista» identifica noches confirmadas de hoy o anteriores; no acredita un check-in real. Las noches futuras figuran como reservadas. «Estadía registrada» corresponde a movimientos reales. Una salida anticipada no cancela las noches previstas de la reserva.</p>
@@ -91,5 +77,18 @@ pageStart('Calendario de disponibilidad', $user);
             </table>
         </div>
     <?php endif ?>
+</details></section>
+<?php endif; ?><details class="planner-extra"><summary>Consultar el mes completo</summary><section data-month-calendar data-today="<?= e(date('Y-m-d')) ?>" hidden aria-label="Calendario mensual interactivo">
+<form class="filter-form">
+<div><label for="month">Mes</label><input id="month" name="month" type="month" required min="2000-01" max="<?= e(substr(bookingLimit(),0,7)) ?>" value="<?= e(validDate($from) && $from >= '2000-01-01' && $from <= bookingLimit() ? substr($from,0,7) : date('Y-m')) ?>"></div>
+<div><label for="month-room">Habitación</label><select id="month-room" name="room_id"><option value="">Todas las habitaciones</option><?php foreach (hotel()->rooms(true) as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $roomValue === (string)$item['id'] ? 'selected' : '' ?>><?= e($item['code'].' · '.$item['name'].(!$item['active']?' · Inactiva':'')) ?></option><?php endforeach ?></select></div>
+<button class="button" type="submit">Ver mes</button>
+</form>
+<div class="calendar-pagination"><button type="button" data-shift="-1">← Mes anterior</button><button type="button" data-today>Hoy</button><button type="button" data-shift="1">Mes siguiente →</button></div>
+<p role="status" aria-live="polite"></p>
+<p>Hacé clic en una reserva para ver su detalle o en «Reservar» para cargar una nueva desde una noche libre. Pendientes y rechazadas no bloquean noches. La salida prevista no ocupa esa noche; una salida anticipada no cancela las noches contratadas.</p>
+<div data-month-content></div>
+<dialog aria-label="Detalle de reserva"><button type="button" data-close autofocus>Cerrar detalle</button><div data-detail></div></dialog>
 </section>
-<?php endif; pageEnd(); ?>
+<script src="<?= e(assetUrl('js/calendar.js')) ?>" defer></script>
+</details><?php pageEnd(); ?>

@@ -352,3 +352,15 @@ tbody tr:hover { background:#f5f8f5; }
 [data-month-calendar] [data-detail] {clear:both;padding-top:1rem}
 @media(max-width:1000px) {.month-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.month-weekday,.month-blank {display:none}}
 @media(max-width:550px) {.month-grid {grid-template-columns:1fr}}
+
+.guest-action { border-radius:8px; background:#234e40; color:#fff; min-height:48px; }
+.guest-action:hover { background:#163d30; }
+.guest-catalog .room-card { padding:0 1.3rem 1.3rem; overflow:hidden; }
+.guest-catalog .room-cover { margin:0 -1.3rem 1.2rem; }
+.room-cover img { width:100%; height:auto; aspect-ratio:1.5; object-fit:cover; }
+.room-cover figcaption { font-size:.75rem; color:var(--muted); padding:.35rem 1.3rem; }
+.guest-catalog .room-gallery { margin:0 -1.3rem 1.2rem; }
+.guest-catalog .room-gallery a { flex-basis:100%; }
+.guest-catalog .rate strong { display:block; font-size:1.45rem; font-weight:500; }
+.guest-catalog .button { width:100%; margin-top:1rem; }
+.guest-catalog .eyebrow { margin-bottom:.5rem; }

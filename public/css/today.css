@@ -1,0 +1,64 @@
+/* El estado del turno es actual. La fecha consultada solo cambia las previsiones. */
+.today-toolbar, .today-shortcuts, .today-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .6rem 1.25rem;
+}
+.today-toolbar p, .today-section-head > span, .today-section-head > time {
+    color: var(--muted);
+}
+.today-shortcuts { justify-content: flex-start; }
+.today-shortcuts .button { margin: 0; min-height: 44px; padding: .55rem 1rem; }
+.today-shortcuts > a:not(.button), .today-all, .today-task-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+}
+.today-options { margin: .55rem 0 1.25rem; border-bottom: 1px solid var(--line); }
+.today-options summary, .today-more summary {
+    padding-block: .65rem;
+    min-height: 44px;
+    cursor: pointer;
+    color: var(--ink);
+    font-size: .9rem;
+}
+.today-options[open] { padding-bottom: .75rem; }
+.today-options .live-controls { margin: .65rem 0 0; }
+.today-section-head { margin: 0 0 .7rem; }
+.today-section-head > span, .today-section-head > time { font-size: .85rem; }
+.today-tasks { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.today-task {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-top: 3px solid #57786a;
+    border-radius: 10px;
+    padding: 1rem 1.2rem .7rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.today-task h3 { font-size: 1rem; }
+.today-task-label { color: var(--muted); font-size: .8rem; margin: .85rem 0 .1rem; }
+.today-task-value { font-weight: bold; }
+.today-clear, .today-task-note, .today-all { font-size: .9rem; color: var(--muted); }
+.today-clear { padding-block: 1rem; }
+.today-task-link { color: #254c3e; gap: .5rem; font-weight: bold; }
+.today-all { display: flex; width: fit-content; }
+.today-more { border-bottom: 1px solid var(--line); }
+.today-more .request-list { margin: 0; }
+.today-more[open] { padding-bottom: .65rem; }
+.today-more a { overflow-wrap: anywhere; }
+.today-plan { margin-top: 1.75rem; }
+#dashboard-content .metrics-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.today-forecast .room-status-grid { grid-template-columns: repeat(auto-fit,minmax(min(100%,12rem),1fr)); }
+@media(max-width:800px) {
+    .today-tasks { grid-template-columns: 1fr; }
+}
+@media(max-width:640px) {
+    #dashboard-content .metrics-grid { grid-template-columns: 1fr; gap: .5rem; }
+    #dashboard-content .metric-card { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: .15rem .5rem; padding: .7rem 1rem; }
+    #dashboard-content .metric-card strong { grid-area: 1/2/3/3; font-size: 1.7rem; }
+    .today-task { padding-inline: 1rem; }
+    .today-shortcuts { gap: .3rem .8rem; }
+}

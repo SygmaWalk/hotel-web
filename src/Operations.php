@@ -60,12 +60,17 @@ trait HotelOperations
     public function cleaningRooms(): array
     {
         return $this->query('SELECT h.id, h.code, h.name, h.active, c.reservation_id, c.pending_at,
+            (SELECT MIN(upcoming.check_in) FROM reservations upcoming
+                WHERE c.reservation_id IS NOT NULL AND upcoming.room_id = h.id
+                AND upcoming.status = \'confirmed\' AND upcoming.check_out > ?
+                AND NOT EXISTS (SELECT 1 FROM stays registered WHERE registered.reservation_id = upcoming.id)
+            ) AS next_check_in,
             EXISTS(SELECT 1 FROM stays s JOIN reservations r ON r.id = s.reservation_id
                 WHERE r.room_id = h.id AND s.checked_out_at IS NULL) AS occupied
             FROM rooms h LEFT JOIN reservations r ON r.room_id = h.id
                 AND EXISTS(SELECT 1 FROM room_cleanings pending WHERE pending.reservation_id = r.id AND pending.completed_at IS NULL)
             LEFT JOIN room_cleanings c ON c.reservation_id = r.id
-            ORDER BY (c.reservation_id IS NULL), c.pending_at, h.code')->fetchAll();
+            ORDER BY (c.reservation_id IS NULL), c.pending_at, h.code', [date('Y-m-d')])->fetchAll();
     }
 
     public function completeCleaning(int $roomId, int $reservationId, int $actor): void

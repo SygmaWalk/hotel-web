@@ -39,12 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stay = hotel()->stay((int) $id);
 $cleaning = hotel()->pendingCleaning((int) $request['room_id']);
 $balance = hotel()->paymentBalance((int) $id);
-pageStart('Solicitud #' . $id, $user);
+pageStart(($request['status'] === 'pending' || $request['status'] === 'rejected' ? 'Solicitud #' : 'Reserva #') . $id, $user);
 errorSummary($errors);
 $nights = (new DateTimeImmutable($request['check_in']))->diff(new DateTimeImmutable($request['check_out']))->days;
 ?>
 <p><a href="<?= e(url('solicitudes.php')) ?>">← Todas las solicitudes</a></p>
 <p><a href="<?= e(url('calendario.php?' . http_build_query(['from'=>$request['check_in'], 'room_id'=>$request['room_id']]))) ?>">Ver en el calendario</a></p>
+<div class="admin-detail-grid"><section aria-label="Datos de la reserva">
 <dl class="detail-panel"><dt>Estado</dt><dd><?= e(statusLabel($request['status'])) ?></dd>
 <dt>Huésped</dt><dd><?= e($request['guest_name']) ?></dd><dt>Correo</dt><dd><?= e($request['email']) ?></dd>
 <dt>Habitación</dt><dd><?= e($request['code'] . ' · ' . $request['room_name']) ?> <?= $request['active'] ? '' : '(inactiva)' ?></dd>
@@ -52,16 +53,14 @@ $nights = (new DateTimeImmutable($request['check_in']))->diff(new DateTimeImmuta
 <dt>Importe registrado</dt><dd>$ <?= e(number_format($nights * (float) $request['nightly_rate'], 2, ',', '.')) ?> ARS</dd>
 <dt>Recibida</dt><dd><?= e($request['created_at']) ?></dd>
 <?php if ($request['resolved_actor']): ?><dt>Resuelta por</dt><dd><?= e($request['resolved_actor']) ?> · <?= e($request['resolved_at']) ?></dd><?php endif ?></dl>
-<?php $reservation=$request; require dirname(__DIR__).'/views/payment-balance.php'; ?>
-<?php require dirname(__DIR__) . '/views/reservation-emails.php'; ?>
-<p><a class="button" href="<?= e(url('reserva-pagos.php?id='.$id)) ?>">Gestionar señas y pagos</a></p>
+</section><div class="admin-primary-actions">
 <?php if ($request['status'] === 'cancelled'): ?>
 <section class="form-panel" aria-labelledby="cancellation-title"><h2 id="cancellation-title">Cancelación registrada</h2>
 <p>Esta reserva ya no ocupa fechas en el calendario. Sus datos se conservan para consulta.</p>
 <dl class="detail-panel"><dt>Motivo</dt><dd class="cancellation-reason"><?= e($request['cancellation_reason']) ?></dd>
 <dt>Cancelada por</dt><dd><?= e($request['cancelled_actor']) ?></dd><dt>Fecha y hora</dt><dd><?= e($request['cancelled_at']) ?></dd></dl></section>
 <?php endif ?>
-<?php if ($request['status'] === 'pending'): ?><form method="post" id="actions" class="actions"><?php csrfInput() ?><button class="button" name="action" value="confirmed">Confirmar reserva</button><button class="button secondary" name="action" value="rejected">Rechazar solicitud</button></form>
+<?php if ($request['status'] === 'pending'): ?><form method="post" id="actions" class="actions admin-decision"><?php csrfInput() ?><button class="button" name="action" value="confirmed">Confirmar reserva</button><button class="button secondary" name="action" value="rejected">Rechazar solicitud</button></form>
 <p class="data-note">Confirmar comprueba disponibilidad. Rechazar no ocupa la habitación.</p><?php endif ?>
 <?php if ($request['status'] === 'confirmed'): ?>
 <section id="actions" class="form-panel"><h2>Estadía real</h2>
@@ -75,9 +74,15 @@ $nights = (new DateTimeImmutable($request['check_in']))->diff(new DateTimeImmuta
 <?php if ($stay && $balance['due']>0): ?><p class="notice">Saldo pendiente registrado: <strong><?= e(Hotel::moneyLabel($balance['due'])) ?></strong>. <a href="<?= e(url('reserva-pagos.php?id='.$id)) ?>">Revisar pagos antes de la salida</a>. Podés registrar la salida y conservar el saldo pendiente.</p><?php endif ?>
 <button class="button" <?= !$stay && $cleaning ? 'disabled' : '' ?>><?= $stay ? 'Registrar salida' : 'Registrar llegada' ?></button></form>
 <?php endif ?></section><?php endif ?>
+</div></div>
+<div class="admin-detail-grid"><div>
+<?php $reservation=$request; require dirname(__DIR__).'/views/payment-balance.php'; ?>
+
+<p><a class="button" href="<?= e(url('reserva-pagos.php?id='.$id)) ?>">Gestionar señas y pagos</a></p>
+</div><div>
 <?php if ($request['status'] === 'confirmed' && !$stay): ?>
 <p><a class="button" href="<?= e(url('reserva-reprogramar.php?id=' . $id)) ?>">Reprogramar reserva</a></p>
-<section class="form-panel" aria-labelledby="cancel-title"><h2 id="cancel-title">Cancelar reserva</h2>
+<details class="admin-disclosure" <?= field($_POST, 'action') === 'cancel' ? 'open' : '' ?>><summary>Cancelar reserva</summary><section aria-labelledby="cancel-title"><h2 id="cancel-title">Cancelar reserva</h2>
 <p>Se liberarán las fechas de esta reserva. El motivo y la persona responsable quedarán registrados. Esta acción no se puede deshacer desde esta pantalla.</p>
 <?php if ($balance['net']>0): ?><p class="notice">Hay <?= e(Hotel::moneyLabel($balance['net'])) ?> en pagos netos. Cancelar no devuelve dinero; quedarán a favor del huésped para su seguimiento en Pagos.</p><?php endif ?>
 <form method="post"><?php csrfInput() ?><input type="hidden" name="action" value="cancel">
@@ -85,8 +90,10 @@ $nights = (new DateTimeImmutable($request['check_in']))->diff(new DateTimeImmuta
 <textarea id="reason" name="reason" rows="3" maxlength="500" required aria-describedby="reason-help"><?= e(field($_POST, 'reason')) ?></textarea>
 <p id="reason-help" class="data-note">Hasta 500 caracteres. Por ejemplo: el huésped solicitó cancelar su viaje.</p>
 <label class="check-label"><input type="checkbox" name="acknowledged" value="1" required> Confirmo que quiero cancelar la reserva #<?= e($id) ?>, habitación <?= e($request['code']) ?>, del <?= e($request['check_in']) ?> al <?= e($request['check_out']) ?>.</label>
-<button class="button danger">Confirmar cancelación</button></form></section>
+<button class="button danger">Confirmar cancelación</button></form></section></details>
 <?php endif ?>
+<details class="admin-disclosure" <?= field($_POST, 'action') === 'send_email' ? 'open' : '' ?>><summary>Correos y avisos al huésped</summary><?php require dirname(__DIR__) . '/views/reservation-emails.php'; ?></details>
+</div></div>
 <?php $changes = hotel()->reservationChanges((int) $id); if ($changes): ?>
 <section class="spaced-heading" aria-labelledby="history-title"><h2 id="history-title">Historial de reprogramaciones</h2>
 <?php foreach ($changes as $change): ?>

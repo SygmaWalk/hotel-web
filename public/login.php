@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 pageStart('Acceso del personal');
 errorSummary($errors);
 ?>
+<p class="intro">Ingresá para gestionar las reservas y las tareas del hotel.</p>
 <form method="post" class="form-panel narrow"><?php csrfInput() ?>
 <?php inputField('email', 'Correo del personal', $data, $errors, 'email', 'required maxlength="190" autocomplete="username"') ?>
 <label for="password">Contraseña</label><input type="password" id="password" name="password" required autocomplete="current-password" maxlength="200">

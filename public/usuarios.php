@@ -20,7 +20,7 @@ pageStart('Usuarios de recepción', $user);
 <form method="post" class="form-panel narrow">
 <?php csrfInput(); inputField('email', 'Correo del nuevo usuario', $data, $errors, 'email', 'required maxlength="190" autocomplete="off"'); ?>
 <label for="password">Contraseña</label><input id="password" name="password" type="password" required minlength="12" maxlength="72" autocomplete="new-password" aria-describedby="password-help">
-<p id="password-help" class="data-note">Usá una contraseña de al menos 12 caracteres. Máximo 72 bytes; las letras acentuadas pueden ocupar más de uno.</p>
+<p id="password-help" class="data-note">Usá una contraseña larga de al menos 12 caracteres. Podés pegarla desde tu gestor de contraseñas.</p>
 <label for="confirmation">Repetir contraseña</label><input id="confirmation" name="confirmation" type="password" required autocomplete="new-password" maxlength="72">
 <button class="button">Crear usuario de recepción</button>
 </form>

@@ -211,7 +211,10 @@ try {
     check($code === 200 && str_contains($body, $valid['guest_name']), 'personal consulta solicitudes');
     [$code,$body] = request('dashboard.php?date='.$day(20),[],'admin');
     check($code === 200 && str_contains($body,'id="dashboard-content"') && str_contains($body,'data-date="'.$day(20).'"'), 'dashboard administrador y fecha consultada');
-    check(str_contains($body,'aria-current="page">Panel del día') && str_contains($body,'solicitud.php?id='.$id), 'navegación activa y enlaces a detalle');
+    check(str_contains($body,'aria-current="page">Hoy</a>') && str_contains($body,'solicitud.php?id='.$id), 'navegación activa y enlaces a detalle');
+    $oldestPendingId = (int) $pdo->query("SELECT id FROM reservations WHERE status='pending' ORDER BY created_at, id LIMIT 1")->fetchColumn();
+    check(str_contains($body, 'solicitud.php?id='.$oldestPendingId.'">Revisar solicitud #'.$oldestPendingId.' '), 'Hoy abre directamente la solicitud pendiente más antigua');
+    check(str_contains($body,'habitaciones-admin.php') && str_contains($body,'usuarios.php'), 'administración accede al inventario y a usuarios desde Hoy');
     [$calendarCode, $calendarBody] = request('calendario.php?from='.$day(20).'&to='.$day(24).'&room_id='.$roomId, [], 'admin');
     check($calendarCode === 200 && str_contains($calendarBody, 'aria-current="page">Calendario') && str_contains($calendarBody, 'solicitud.php?id='.$id), 'calendario privado integrado con navegación y detalle');
     check(str_contains($calendarBody, '1 habitación · 5 noches') && str_contains($calendarBody, 'room_id='.$roomId), 'calendario muestra rango y conserva filtro en navegación');
@@ -242,10 +245,10 @@ try {
     check(request('login.php',['csrf'=>token($staffForm),'email'=>'staff@example.test','password'=>$staffPassword],'staff','POST')[0] === 303, 'login recepción');
     $staffBody = request('solicitudes.php',[],'staff')[1]; $staffCsrf=token($staffBody);
     [$code,$body] = request('dashboard.php',[],'staff');
-    check($code === 200 && !str_contains($body,'habitaciones-admin.php'), 'dashboard recepción sin enlace administrativo');
+    check($code === 200 && !str_contains($body,'habitaciones-admin.php') && !str_contains($body,'usuarios.php'), 'dashboard recepción sin enlaces administrativos');
     [$code,$body] = request('calendario.php', [], 'staff');
     check($code === 200 && str_contains($body, 'Calendario de disponibilidad') && !str_contains($body, 'habitaciones-admin.php'), 'recepción accede al calendario sin administrar habitaciones');
-    check(str_contains(request('habitaciones.php',[],'staff')[1],'Panel del día'), 'catálogo conserva navegación de sesión');
+    check(str_contains(request('habitaciones.php',[],'staff')[1],'dashboard.php">Hoy</a>'), 'catálogo conserva navegación de sesión');
     check(request('habitaciones-admin.php',[],'staff')[0] === 403, 'recepción no administra');
     check(request('habitaciones-admin.php',['csrf'=>$staffCsrf,'action'=>'save',...$room],'staff','POST')[0] === 403, 'autorización POST servidor');
     check(request('habitaciones-admin.php',['csrf'=>$adminCsrf,'action'=>'save',...$room,'code'=>'T-HTTP'],'admin','POST')[0] === 303, 'alta HTTP');

@@ -5,7 +5,7 @@ require_once dirname(__DIR__) . '/src/Database.php';
 require_once dirname(__DIR__) . '/src/Validation.php';
 
 /** Carga una sola colección de demostración; nunca actualiza ni borra reservas. */
-function seedDemo(PDO $pdo, string $date): array
+function seedDemo(PDO $pdo, string $date, bool $defensa = false): array
 {
     if (!validDate($date) || $date < '2000-01-08' || $date > '2099-12-23') {
         throw new DomainException('Fecha de referencia inválida: usar YYYY-MM-DD entre 2000-01-08 y 2099-12-23.');
@@ -24,7 +24,10 @@ function seedDemo(PDO $pdo, string $date): array
         ['rechazada', '101', 0, 3, 'rejected', 'Demo Rechazada'],
         ['pendiente-futura', '201', 6, 8, 'pending', 'Demo Pendiente Futura'],
     ];
-    $tokens = array_map(fn(array $case): string => hash('sha256', 'hotel-aurora-demo-v1:' . $case[0]), $cases);
+    // La defensa tiene identificadores propios para conservar el historial del primer parcial.
+    $prefix = $defensa ? 'hotel-aurora-defensa-2026:' : 'hotel-aurora-demo-v1:';
+    $names = ['Ana Ríos', 'Tomás Vega', 'Inés Soto', 'Julián Mora', 'Clara Paz', 'Lucas Vidal', 'Elena Sol', 'Nicolás Prado'];
+    $tokens = array_map(fn(array $case): string => hash('sha256', $prefix . $case[0]), $cases);
     $pdo->beginTransaction();
     try {
         // Mismo orden de bloqueo que la aplicación: habitación antes de reserva.
@@ -49,6 +52,10 @@ function seedDemo(PDO $pdo, string $date): array
         $insert = $pdo->prepare('INSERT INTO reservations (room_id, guest_name, email, check_in, check_out, nightly_rate, status, submission_token, created_at, resolved_by, resolved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         foreach ($cases as $i => [$key, $code, $from, $to, $status, $name]) {
             $room = $byCode[$code];
+            if ($defensa) {
+                $name = $names[$i];
+                $key = 'defensa-' . $key;
+            }
             if ($status === 'confirmed') {
                 $overlap->execute([$room['id'], $day($to), $day($from)]);
                 if ($overlap->fetchColumn()) throw new DomainException('Hay una reserva confirmada incompatible en la habitación ' . $code . '. Se cancela toda la carga demo.');
@@ -66,9 +73,10 @@ function seedDemo(PDO $pdo, string $date): array
 
 if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     date_default_timezone_set('America/Argentina/Buenos_Aires');
-    if (count($argv) > 2) { fwrite(STDERR, "Uso: php scripts/seed-demo.php [YYYY-MM-DD]\n"); exit(1); }
+    if (count($argv) > 2) { fwrite(STDERR, "Uso: php scripts/seed-demo.php [YYYY-MM-DD | --defensa]\n"); exit(1); }
     try {
-        $result = seedDemo(db(), $argv[1] ?? date('Y-m-d'));
+        $defensa = ($argv[1] ?? '') === '--defensa';
+        $result = seedDemo(db(), $defensa ? '2026-11-16' : ($argv[1] ?? date('Y-m-d')), $defensa);
         echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL;
     } catch (DomainException $error) {
         fwrite(STDERR, $error->getMessage() . PHP_EOL); exit(1);

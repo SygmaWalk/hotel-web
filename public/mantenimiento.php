@@ -44,7 +44,7 @@ if (array_key_exists('block_id',$_GET)) {
 }
 pageStart('Mantenimiento', $user);
 ?>
-<p class="intro">Bloqueá una habitación por fechas para realizar reparaciones. Primero revisá las reservas afectadas; guardar vuelve a comprobar los conflictos.</p>
+<p class="intro">Bloqueá una habitación por fechas para realizar reparaciones. Revisá las reservas afectadas antes de confirmar el bloqueo.</p>
 <p><a href="<?= e(url('calendario.php')) ?>">Ver calendario</a></p>
 <div id="review"><?php errorSummary($errors) ?></div>
 <?php if ($review): ?>
@@ -61,7 +61,7 @@ pageStart('Mantenimiento', $user);
 <label class="check-label"><input type="checkbox" name="acknowledged" value="1" required> Confirmo el bloqueo de la habitación <?= e($review['room']['code']) ?> del <?= e($data['start_date']) ?> al <?= e($data['end_date']) ?>.</label>
 <button class="button">Guardar bloqueo</button></form><p class="data-note">Esta revisión vence en 20 minutos. Hasta guardar, la habitación sigue disponible.</p>
 <?php else: ?><p class="notice error">No se puede guardar el bloqueo mientras existan estos conflictos.</p><?php endif ?></section><?php endif ?>
-<section class="form-panel"><h2>Nuevo bloqueo</h2>
+<div class="admin-work-grid"><section class="form-panel"><h2>Nuevo bloqueo</h2><p class="data-note">1. Elegí habitación y fechas. 2. Revisá conflictos. 3. Confirmá el bloqueo.</p>
 <form method="post"><?php csrfInput() ?><input type="hidden" name="action" value="review">
 <label for="room_id">Habitación</label><select id="room_id" name="room_id" required><option value="">Elegí una habitación</option>
 <?php foreach ($rooms as $room): ?><option value="<?= e($room['id']) ?>" <?= $data['room_id']===(string)$room['id']?'selected':'' ?>><?= e($room['code'].' · '.$room['name'].(!$room['active']?' · Inactiva':'')) ?></option><?php endforeach ?></select>
@@ -69,23 +69,23 @@ pageStart('Mantenimiento', $user);
 <p class="data-note">Ejemplo: del 23 al 25 bloquea las noches del 23 y 24. El 25 vuelve a estar disponible si no tiene otras restricciones. Máximo un año de anticipación.</p>
 <label for="reason">Motivo del mantenimiento</label><textarea id="reason" name="reason" rows="3" maxlength="500" required><?= e($data['reason']) ?></textarea>
 <button class="button">Revisar conflictos</button></form></section>
-<section class="spaced-heading"><h2>Bloqueos vigentes y programados</h2>
+<section class="admin-current-blocks"><h2>Bloqueos vigentes y programados <span class="count-pill"><?= count($blocks) ?></span></h2>
 <?php if (!$blocks): ?><p>No hay bloqueos vigentes ni programados.</p><?php endif ?>
 <?php foreach ($blocks as $block): ?>
 <article class="form-panel" id="block-<?= e($block['id']) ?>"><h3>Habitación <?= e($block['code']) ?> · Bloqueo #<?= e($block['id']) ?></h3>
 <p><span class="calendar-state maintenance"><?= $block['start_date']<=date('Y-m-d')?'En mantenimiento':'Programado' ?></span><?= !$block['active']?' · Habitación inactiva':'' ?></p>
-<p><?= e($block['start_date']) ?> a <?= e($block['end_date']) ?> · Fin exclusivo.</p>
+<p><?= e($block['start_date']) ?> a <?= e($block['end_date']) ?> · La última fecha vuelve a quedar disponible.</p>
 <p class="cancellation-reason"><?= e($block['reason']) ?></p><p class="data-note">Creado por <?= e($block['created_actor']) ?> · <?= e($block['created_at']) ?></p>
-<details><summary>Levantar bloqueo #<?= e($block['id']) ?></summary>
+<details <?= field($_POST, 'action') === 'release' && field($_POST, 'block_id') === (string)$block['id'] ? 'open' : '' ?>><summary>Levantar bloqueo #<?= e($block['id']) ?></summary>
 <form method="post"><?php csrfInput() ?><input type="hidden" name="action" value="release"><input type="hidden" name="block_id" value="<?= e($block['id']) ?>">
 <label for="release-<?= e($block['id']) ?>">Motivo para levantarlo</label><textarea id="release-<?= e($block['id']) ?>" name="release_reason" rows="2" maxlength="500" required></textarea>
 <label class="check-label"><input type="checkbox" name="acknowledged" value="1" required> Confirmo que se pueden liberar las noches pendientes de este bloqueo desde hoy.</label>
 <p class="data-note">Se conserva el historial de noches anteriores. La limpieza y la activación de la habitación se gestionan por separado.</p>
 <button class="button secondary">Levantar bloqueo #<?= e($block['id']) ?></button></form></details></article><?php endforeach ?></section>
-<section class="spaced-heading"><h2>Historial de mantenimiento</h2><p class="data-note">Últimos 30 bloqueos terminados o levantados, más el seleccionado desde el calendario. Las fechas originales se conservan.</p>
+</div><section class="spaced-heading admin-history"><h2>Historial de mantenimiento</h2><p class="data-note">Últimos 30 bloqueos terminados o levantados, más el seleccionado desde el calendario. Las fechas originales se conservan.</p>
 <?php if (!$history): ?><p>Todavía no hay bloqueos terminados.</p><?php endif ?>
 <?php foreach ($history as $block): ?><article class="form-panel" id="block-<?= e($block['id']) ?>"><h3>Habitación <?= e($block['code']) ?> · Bloqueo #<?= e($block['id']) ?> · <?= $block['released_at']?'Levantado':'Finalizado por fecha' ?></h3>
-<p><?= e($block['start_date']) ?> a <?= e($block['end_date']) ?> · Fin exclusivo.</p><p class="cancellation-reason"><?= e($block['reason']) ?></p>
+<p><?= e($block['start_date']) ?> a <?= e($block['end_date']) ?> · La última fecha vuelve a quedar disponible.</p><p class="cancellation-reason"><?= e($block['reason']) ?></p>
 <p>Creado por <?= e($block['created_actor']) ?> · <?= e($block['created_at']) ?></p>
 <?php if ($block['released_at']): ?><p>Levantado por <?= e($block['released_actor']) ?> · <?= e($block['released_at']) ?></p><p class="cancellation-reason">Motivo: <?= e($block['release_reason']) ?></p><?php endif ?></article><?php endforeach ?></section>
 <?php pageEnd(); ?>

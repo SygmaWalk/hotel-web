@@ -20,6 +20,7 @@ $servicios = [
     <meta name="theme-color" content="#172e39">
     <title><?= htmlspecialchars($nombreHotel, ENT_QUOTES, 'UTF-8') ?> | Un lugar para descansar</title>
     <link rel="stylesheet" href="css/styles.css?v=<?= filemtime(__DIR__ . '/css/styles.css') ?>">
+    <link rel="stylesheet" href="css/interface.css?v=<?= filemtime(__DIR__ . '/css/interface.css') ?>">
     <script src="js/navigation.js?v=<?= filemtime(__DIR__ . '/js/navigation.js') ?>" defer></script>
 </head>
 <body>
@@ -49,7 +50,7 @@ $servicios = [
                 <h1 id="titulo-hotel"><?= htmlspecialchars($nombreHotel, ENT_QUOTES, 'UTF-8') ?></h1>
                 <p class="hero-tagline"><?= htmlspecialchars($descripcion, ENT_QUOTES, 'UTF-8') ?></p>
                 <p class="hero-description">Bajá el ritmo. Disfrutá de espacios tranquilos, una atención cercana y los pequeños detalles que hacen una buena estadía.</p>
-                <a class="button" href="habitaciones.php">Conocé nuestras habitaciones <span aria-hidden="true">↓</span></a>
+                <a class="button guest-action" href="habitaciones.php">Ver habitaciones <span aria-hidden="true">→</span></a>
                 <p class="hero-location"><span aria-hidden="true">◎</span> Bariloche, Patagonia argentina <span class="example-label">Ubicación de ejemplo</span></p>
             </div>
             <figure class="hero-figure">

@@ -1,0 +1,92 @@
+/* Navegación del personal. El menú público conserva su presentación original. */
+.staff-area {
+    --rail: #193b34;
+    --rail-focus: #355a4e;
+    --rail-text: #fffaf0;
+}
+.staff-area .site-header {
+    background: var(--rail);
+    color: var(--rail-text);
+}
+.staff-area .app-header { gap: 1.25rem; }
+.staff-area .app-nav, .staff-group { align-items: stretch; }
+.staff-area .app-nav { gap: 1rem; }
+.staff-group { display: flex; flex-direction: column; }
+.staff-group-label {
+    color: #c5d7cd;
+    font-size: .75rem;
+    font-weight: bold;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 0 .75rem .2rem;
+}
+.staff-area .app-nav a, .staff-area .app-nav .text-button {
+    width: 100%;
+    min-height: 44px;
+    padding: .45rem .75rem;
+    color: var(--rail-text);
+    text-align: left;
+}
+.staff-area .app-nav a:hover, .staff-area .app-nav .text-button:hover {
+    background: var(--rail-focus);
+}
+.staff-area .app-nav a[aria-current="page"] {
+    background: #e2eee5;
+    color: #163b32;
+    font-weight: bold;
+}
+.staff-area .site-header :focus-visible { outline-color: #ffbe78; outline-offset: 2px; }
+.staff-account { border-top: 1px solid #567168; padding-top: .85rem; }
+.staff-area .app-main { min-width: 0; }
+
+/* La columna de trabajo puede contraerse aun si contiene un calendario ancho. */
+@media (min-width: 1101px) {
+    .staff-area {
+        display: grid;
+        grid-template-columns: 13.5rem minmax(0, 1fr);
+        grid-template-rows: auto 1fr auto;
+        min-height: 100vh;
+    }
+    .staff-area .demo-notice, .staff-area .site-footer { grid-column: 1 / -1; }
+    .staff-area .app-header {
+        width: 100%;
+        padding: 1.5rem 1.1rem;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .staff-area .brand { padding-inline: .75rem; }
+    .staff-area .app-nav { flex-direction: column; }
+    .staff-area .app-main { padding-block: 2.25rem 4rem; }
+}
+@media (min-width: 1101px) and (min-height: 800px) {
+    .staff-area .app-header { position: sticky; top: 0; }
+}
+
+/* En pantallas angostas, el menú se abre en el flujo y también funciona sin JS. */
+@media (max-width: 1100px) {
+    .staff-area .app-header {
+        min-height: 70px;
+        flex-flow: row wrap;
+        align-items: center;
+        padding-block: .75rem;
+        gap: .75rem;
+    }
+    .js .staff-area .app-menu-toggle {
+        display: block;
+        margin-inline-start: auto;
+        min-height: 44px;
+        padding: .35rem .9rem;
+        border: 1px solid #a9bdb3;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--rail-text);
+    }
+    .staff-area .app-nav, .js .staff-area .app-nav[data-open="true"] {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+        padding-block: .5rem;
+    }
+    .js .staff-area .app-nav { display: none; }
+    .staff-account { padding-top: 0; border: 0; }
+}

@@ -29,6 +29,8 @@ if (dashboardForm && dashboardContent) {
             const next = page.querySelector('#dashboard-content');
             if (!next) throw new Error('No se pudo leer el panel. Volvé a cargar.');
             if (controller !== request) return;
+            const expanded = new Set(Array.from(dashboardContent.querySelectorAll('details[id][open]'), section => section.id));
+            for (const section of next.querySelectorAll('details[id]')) section.open = expanded.has(section.id);
             dashboardContent.replaceChildren(...next.childNodes);
             dashboardContent.dataset.date = next.dataset.date;
             history.replaceState(null, '', target);

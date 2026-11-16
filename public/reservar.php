@@ -25,9 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 pageStart('Solicitá tu estadía');
 ?>
-<p class="intro">Enviar una solicitud no confirma una reserva. El personal revisará las fechas y la habitación elegida. Demo: usá datos ficticios.</p>
-<p class="data-note">Entrada y salida deben quedar dentro del próximo año: hasta <?= e(bookingLimit()) ?>.</p>
-<p class="data-note"><?= reservationEmails()->enabled() ? 'Te enviaremos un aviso de recepción al correo indicado. La confirmación llegará cuando el personal apruebe tu reserva. Usá una dirección propia para esta demostración.' : 'Los avisos por correo todavía no están activados en esta instalación. Conservá la referencia que aparece al enviar.' ?></p>
+<p><a href="<?= e(url('habitaciones.php')) ?>">← Volver a habitaciones</a></p>
+<p class="intro">Elegí las fechas para ver el importe estimado. Cuando envíes la solicitud, recepción revisará la disponibilidad antes de confirmar. Usá datos ficticios para la demo.</p>
+<p class="data-note">Podés solicitar fechas hasta el <?= e((new DateTimeImmutable(bookingLimit()))->format('d/m/Y')) ?>.</p>
+<p class="data-note"><?= reservationEmails()->enabled() ? 'Te enviaremos un aviso de recepción al correo indicado. La confirmación llegará cuando el personal apruebe tu reserva. Usá una dirección propia para esta demostración.' : 'Al enviar, recibirás una referencia en pantalla para consultar tu solicitud.' ?></p>
 <?php errorSummary($errors) ?>
 <?php if (!$rooms): ?><p class="notice">No hay habitaciones activas. Intentá nuevamente más adelante.</p><?php else: ?>
 <form class="form-panel" method="post" data-reservation-form>
@@ -41,6 +42,6 @@ pageStart('Solicitá tu estadía');
 <?php foreach ($rooms as $room): ?><option value="<?= e($room['id']) ?>" data-rate="<?= e($room['nightly_rate']) ?>" <?= (string) $room['id'] === ($data['room_id'] ?? '') ? 'selected' : '' ?>><?= e($room['code'] . ' · ' . $room['name'] . ' · Hasta ' . $room['capacity'] . ' personas') ?></option><?php endforeach ?></select>
 <?php if (isset($errors['room_id'])): ?><p id="room_id-error" class="field-error"><?= e($errors['room_id']) ?></p><?php endif ?>
 <p id="estimate" class="notice" aria-live="polite">Elegí las fechas y la habitación para calcular un importe orientativo.</p>
-<button class="button" type="submit">Enviar solicitud</button>
+<button class="button guest-action" type="submit">Enviar solicitud <span aria-hidden="true">→</span></button>
 </form><?php endif ?>
 <?php pageEnd(); ?>

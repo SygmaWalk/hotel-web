@@ -14,24 +14,49 @@ function pageStart(string $title, ?array $user = null): void {
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> | Hotel Aurora</title><link rel="stylesheet" href="<?= e(assetUrl('css/styles.css')) ?>">
-<script src="<?= e(assetUrl('js/forms.js')) ?>" defer></script><script src="<?= e(assetUrl('js/navigation.js')) ?>" defer></script></head><body class="app-body">
+<?php if ($user): ?><link rel="stylesheet" href="<?= e(assetUrl('css/staff-nav.css')) ?>"><?php endif ?>
+<?php if ($user && basename($_SERVER['SCRIPT_NAME']) === 'dashboard.php'): ?><link rel="stylesheet" href="<?= e(assetUrl('css/today.css')) ?>"><?php endif ?>
+<link rel="stylesheet" href="<?= e(assetUrl('css/interface.css')) ?>">
+<script src="<?= e(assetUrl('js/accessibility.js')) ?>" defer></script>
+<script src="<?= e(assetUrl('js/forms.js')) ?>" defer></script><script src="<?= e(assetUrl('js/navigation.js')) ?>" defer></script></head><body class="app-body<?= $user ? ' staff-area' : '' ?>">
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <div class="demo-notice">Proyecto académico · Hotel ficticio e información de ejemplo</div>
 <header class="site-header"><div class="container app-header">
-<a class="brand" href="<?= e(url('index.php')) ?>"><span class="brand-monogram" aria-hidden="true">A</span><span>HOTEL <strong>AURORA</strong></span></a>
+<a class="brand" href="<?= e(url($user ? 'dashboard.php' : 'index.php')) ?>" aria-label="<?= $user ? 'Hotel Aurora · Volver a Hoy' : 'Hotel Aurora · Inicio' ?>"><span class="brand-monogram" aria-hidden="true">A</span><span>HOTEL <strong>AURORA</strong></span></a>
 <button class="menu-toggle app-menu-toggle" type="button" aria-controls="navegacion" aria-expanded="false" hidden>Menú</button>
-<nav id="navegacion" class="app-nav" aria-label="Principal">
-<?php if ($user): ?><?php navLink('dashboard.php', 'Panel del día'); navLink('calendario.php', 'Calendario'); navLink('solicitudes.php', 'Solicitudes'); navLink('cobros.php', 'Cobros'); navLink('limpieza.php', 'Limpieza'); navLink('mantenimiento.php', 'Mantenimiento'); ?>
-<?php if ($user['role'] === 'admin'): ?><?php navLink('habitaciones-admin.php', 'Habitaciones'); navLink('usuarios.php', 'Usuarios'); ?><?php endif ?>
-<?php navLink('habitaciones.php', 'Ver catálogo'); ?>
-<form method="post" action="<?= e(url('logout.php')) ?>"><?php csrfInput() ?><button class="text-button">Cerrar sesión</button></form>
+<nav id="navegacion" class="app-nav" aria-label="<?= $user ? 'Gestión del hotel' : 'Principal' ?>">
+<?php if ($user): ?>
+<div class="staff-group" role="group" aria-labelledby="nav-recepcion">
+    <p class="staff-group-label" id="nav-recepcion">Recepción</p>
+    <?php navLink('dashboard.php', 'Hoy'); navLink('calendario.php', 'Calendario'); navLink('solicitudes.php', 'Solicitudes'); ?>
+</div>
+<div class="staff-group" role="group" aria-labelledby="nav-operacion">
+    <p class="staff-group-label" id="nav-operacion">Operación</p>
+    <?php navLink('limpieza.php', 'Limpieza'); navLink('mantenimiento.php', 'Mantenimiento'); navLink('cobros.php', 'Cobros'); ?>
+</div>
+<?php if ($user['role'] === 'admin'): ?>
+<div class="staff-group" role="group" aria-labelledby="nav-administracion">
+    <p class="staff-group-label" id="nav-administracion">Administración</p>
+    <?php navLink('habitaciones-admin.php', 'Habitaciones'); navLink('usuarios.php', 'Usuarios'); ?>
+</div>
+<?php endif ?>
+<div class="staff-group staff-account" role="group" aria-labelledby="nav-sesion">
+    <p class="staff-group-label" id="nav-sesion">Sitio y sesión</p>
+    <?php navLink('habitaciones.php', 'Ver catálogo'); ?>
+    <form method="post" action="<?= e(url('logout.php')) ?>"><?php csrfInput() ?><button class="text-button">Cerrar sesión</button></form>
+</div>
 <?php else: ?><?php navLink('habitaciones.php', 'Habitaciones'); navLink('reservar.php', 'Solicitar estadía'); navLink('login.php', 'Personal'); ?><?php endif ?></nav></div></header>
 <main id="contenido" class="container app-main" tabindex="-1"><p class="eyebrow"><?= $user ? 'GESTIÓN DEL HOTEL · ' . ($user['role'] === 'admin' ? 'ADMINISTRACIÓN' : 'RECEPCIÓN') : 'HOTEL AURORA' ?></p><h1><?= e($title) ?></h1>
 <?php if (isset($_SESSION['flash'])): ?><p class="notice success" role="status"><?= e($_SESSION['flash']) ?></p><?php unset($_SESSION['flash']); endif;
 }
-function roomGallery(int $roomId, string $name): void {
+function roomGallery(int $roomId, string $name, ?string $illustration = null): void {
     $images = hotel()->images($roomId);
-    if (!$images) return;
+    if (!$images) {
+        if ($illustration !== null) {
+            echo '<figure class="room-cover"><img src="' . e(url('img/' . $illustration)) . '" alt="" width="600" height="400"><figcaption>Imagen ilustrativa</figcaption></figure>';
+        }
+        return;
+    }
     echo '<div class="room-gallery" role="group" aria-label="Fotos de ' . e($name) . '">';
     foreach ($images as $i => $photo) {
         echo '<a href="' . e(url('imagen.php?id=' . $photo['id'])) . '" target="_blank" rel="noopener"><img src="' . e(url('imagen.php?id=' . $photo['id'])) . '" alt="' . e($name . ' · Foto ' . ($i+1)) . '" loading="lazy" width="480" height="320"></a>';
@@ -43,8 +68,8 @@ function pageEnd(): void { ?>
 <?php }
 function errorSummary(array $errors): void {
     if (!$errors) return;
-    echo '<div class="notice error" role="alert"><p>Revisá lo siguiente:</p><ul>';
-    foreach ($errors as $key => $error) echo '<li><a href="#' . e($key) . '">' . e($error) . '</a></li>';
+    echo '<div class="notice error" role="alert" tabindex="-1" data-error-summary><p>Revisá lo siguiente:</p><ul>';
+    foreach ($errors as $key => $error) echo '<li><a id="summary-' . e($key) . '" data-error-target="' . e($key) . '" href="#' . e($key) . '">' . e($error) . '</a></li>';
     echo '</ul></div>';
 }
 function inputField(string $name, string $label, array $data, array $errors, string $type = 'text', string $attrs = ''): void { ?>
